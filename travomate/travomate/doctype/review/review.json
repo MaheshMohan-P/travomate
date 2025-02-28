@@ -1,0 +1,121 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "Review-.#####",
+ "creation": "2025-02-20 09:33:25.194605",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "details_section",
+  "traveler",
+  "traveler_name",
+  "column_break_dwfg",
+  "guide",
+  "guide_name",
+  "section_break_dzxb",
+  "rating",
+  "review_text",
+  "review_date",
+  "add_trip_images_section",
+  "add_images"
+ ],
+ "fields": [
+  {
+   "fieldname": "traveler",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Traveler",
+   "options": "Traveler",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "traveler.full_name",
+   "fieldname": "traveler_name",
+   "fieldtype": "Link",
+   "label": "Traveler Name",
+   "options": "Traveler",
+   "read_only": 1
+  },
+  {
+   "fieldname": "guide",
+   "fieldtype": "Link",
+   "label": "Guide",
+   "options": "Guide",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "guide.full_name",
+   "fieldname": "guide_name",
+   "fieldtype": "Link",
+   "label": "Guide Name",
+   "options": "Guide",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_dwfg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_dzxb",
+   "fieldtype": "Section Break",
+   "label": "Review Details"
+  },
+  {
+   "fieldname": "rating",
+   "fieldtype": "Select",
+   "label": "Rating",
+   "options": "0\n1\n2\n3\n4\n5"
+  },
+  {
+   "fieldname": "review_text",
+   "fieldtype": "Text",
+   "label": "Review Text"
+  },
+  {
+   "fieldname": "review_date",
+   "fieldtype": "Datetime",
+   "label": "Review Date"
+  },
+  {
+   "fieldname": "add_trip_images_section",
+   "fieldtype": "Section Break",
+   "label": "Add Trip Images"
+  },
+  {
+   "fieldname": "add_images",
+   "fieldtype": "Table",
+   "label": "Add Images",
+   "options": "Images"
+  },
+  {
+   "fieldname": "details_section",
+   "fieldtype": "Section Break",
+   "label": "Details"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-02-20 16:39:42.260678",
+ "modified_by": "Administrator",
+ "module": "Travomate",
+ "name": "Review",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

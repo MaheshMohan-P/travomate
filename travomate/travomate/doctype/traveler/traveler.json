@@ -1,0 +1,142 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:full_name",
+ "creation": "2025-02-01 10:44:24.776239",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "traveler_details_section",
+  "user",
+  "full_name",
+  "email",
+  "phone",
+  "gender",
+  "date_of_birth",
+  "column_break_azac",
+  "address",
+  "nationality",
+  "profile_picture",
+  "emergency_contact",
+  "fellow_travelers_tab",
+  "fellow_travelers_details_section",
+  "fellow_travelers_column",
+  "table_frua"
+ ],
+ "fields": [
+  {
+   "fieldname": "traveler_details_section",
+   "fieldtype": "Section Break",
+   "label": "Traveler Details"
+  },
+  {
+   "fetch_from": "user.full_name",
+   "fieldname": "full_name",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Full Name",
+   "options": "User",
+   "unique": 1
+  },
+  {
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Email"
+  },
+  {
+   "fieldname": "gender",
+   "fieldtype": "Select",
+   "label": "Gender",
+   "options": "\nMale\nFemale\nOthers"
+  },
+  {
+   "fieldname": "date_of_birth",
+   "fieldtype": "Date",
+   "label": "Date of Birth"
+  },
+  {
+   "fieldname": "address",
+   "fieldtype": "Small Text",
+   "label": "Address"
+  },
+  {
+   "fieldname": "nationality",
+   "fieldtype": "Data",
+   "label": "Nationality"
+  },
+  {
+   "fieldname": "emergency_contact",
+   "fieldtype": "Phone",
+   "label": "Emergency Contact"
+  },
+  {
+   "fieldname": "column_break_azac",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "profile_picture",
+   "fieldtype": "Attach",
+   "label": "Profile Picture"
+  },
+  {
+   "fieldname": "fellow_travelers_tab",
+   "fieldtype": "Tab Break",
+   "label": "Fellow Travelers"
+  },
+  {
+   "fieldname": "table_frua",
+   "fieldtype": "Table",
+   "options": "Fellow Travelers"
+  },
+  {
+   "fieldname": "fellow_travelers_details_section",
+   "fieldtype": "Section Break",
+   "label": "Fellow Travelers Details"
+  },
+  {
+   "fieldname": "fellow_travelers_column",
+   "fieldtype": "Column Break",
+   "label": "Fellow Travelers"
+  },
+  {
+   "fetch_from": "full_name.full_name",
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "label": "User",
+   "options": "User"
+  },
+  {
+   "fieldname": "phone",
+   "fieldtype": "Phone",
+   "in_list_view": 1,
+   "label": "Phone Number"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-02-28 16:28:07.861955",
+ "modified_by": "Administrator",
+ "module": "Travomate",
+ "name": "Traveler",
+ "naming_rule": "By fieldname",
+ "nsm_parent_field": "parent_traveler",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

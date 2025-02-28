@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en-US" dir="ltr">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Guide Dashboard | Travomate</title>
+  <link href="assets/css/theme.css" rel="stylesheet" />
+  
+</head>
+
+<body>
+  <main class="main" id="top">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light fixed-top py-5 d-block" data-navbar-on-scroll="data-navbar-on-scroll">
+      <div class="container">
+        <a class="navbar-brand" href="index.html"><img src="assets/img/logo.svg" height="100" alt="logo" /></a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse border-top border-lg-0 mt-4 mt-lg-0" id="navbarSupportedContent">
+          <ul class="navbar-nav ms-auto pt-2 pt-lg-0 font-base align-items-lg-center align-items-start">
+            <li class="nav-item px-3 px-xl-4"><a class="nav-link fw-medium" href="/guide_profile">Profile</a></li>
+            <li class="nav-item px-3 px-xl-4"><a class="nav-link fw-medium" href="#bookings">Bookings</a></li>
+            <li class="nav-item px-3 px-xl-4"><a class="nav-link fw-medium" href="#reviews">Reviews</a></li>
+            <li class="nav-item px-3 px-xl-4"><a class="nav-link fw-medium" href="#availability">Availability</a></li>
+            <li class="nav-item px-3 px-xl-4"><a class="btn btn-outline-dark order-1 order-lg-0 fw-medium" href="#"  onclick="logout()">Logout</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section style="padding-top: 7rem;">
+      <div class="bg-holder" style="background-image:url(assets/img/hero/hero-bg.svg);"></div>
+      <div class="container">
+        <div class="row align-items-center">
+          <div class="col-md-7 col-lg-6 text-md-start text-center py-6">
+            <h4 class="fw-bold text-danger mb-3">Welcome Back, Guide!</h4>
+            <h1 class="hero-title">Manage Your Bookings and Reviews</h1>
+            <p class="mb-4 fw-medium">Stay updated with your bookings, respond to reviews, and manage your availability.</p>
+          </div>
+          <div class="col-md-5 col-lg-6 order-0 order-md-1 text-end">
+            <img class="pt-7 pt-md-0 hero-img" src="assets/img/hero/guide-dashboard.png" alt="Guide Dashboard" />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bookings Section -->
+    <section class="pt-5 pt-md-9" id="bookings">
+      <div class="container">
+        <div class="mb-7 text-center">
+          <h5 class="text-secondary">Bookings</h5>
+          <h3 class="fs-xl-10 fs-lg-8 fs-7 fw-bold font-cursive text-capitalize">Upcoming and Past Bookings</h3>
+        </div>
+        <div class="row">
+          <div class="col-lg-4 col-md-6 mb-6">
+            <div class="card service-card shadow-hover rounded-3 text-center align-items-center">
+              <div class="card-body p-xxl-5 p-4">
+                <img src="assets/img/bookings/upcoming.png" width="75" alt="Upcoming Bookings" />
+                <h4 class="mb-3">Upcoming Bookings</h4>
+                <p class="mb-0 fw-medium">View and manage your upcoming bookings.</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-4 col-md-6 mb-6">
+            <div class="card service-card shadow-hover rounded-3 text-center align-items-center">
+              <div class="card-body p-xxl-5 p-4">
+                <img src="assets/img/bookings/past.png" width="75" alt="Past Bookings" />
+                <h4 class="mb-3">Past Bookings</h4>
+                <p class="mb-0 fw-medium">Review your past bookings and feedback.</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-4 col-md-6 mb-6">
+            <div class="card service-card shadow-hover rounded-3 text-center align-items-center">
+              <div class="card-body p-xxl-5 p-4">
+                <img src="assets/img/bookings/availability.png" width="75" alt="Update Availability" />
+                <h4 class="mb-3">Update Availability</h4>
+                <p class="mb-0 fw-medium">Set your availability for new bookings.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Reviews Section -->
+    <section class="pt-5" id="reviews">
+      <div class="container">
+        <div class="mb-7 text-center">
+          <h5 class="text-secondary">Reviews</h5>
+          <h3 class="fs-xl-10 fs-lg-8 fs-7 fw-bold font-cursive text-capitalize">What Travelers Say About You</h3>
+        </div>
+        <div class="row">
+          <div class="col-md-6 mb-4">
+            <div class="card overflow-hidden shadow">
+              <div class="card-body py-4 px-3">
+                <h4 class="text-secondary fw-medium">Recent Reviews</h4>
+                <ul class="list-unstyled">
+                  <li class="mb-2">"Amazing guide! Highly recommended." - Sarah</li>
+                  <li class="mb-2">"Very knowledgeable and friendly." - John</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6 mb-4">
+            <div class="card overflow-hidden shadow">
+              <div class="card-body py-4 px-3">
+                <h4 class="text-secondary fw-medium">Respond to Reviews</h4>
+                <form>
+                  <div class="mb-3">
+                    <textarea class="form-control" placeholder="Your Response" rows="3" required></textarea>
+                  </div>
+                  <button type="submit" class="btn btn-primary">Submit</button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-5 text-center">
+      <p class="mb-0 text-secondary fs--1 fw-medium">All rights reserved@travomate.co</p>
+    </footer>
+  </main>
+
+  <!-- Scripts -->
+  <script src="vendors/@popperjs/popper.min.js"></script>
+  <script src="vendors/bootstrap/bootstrap.min.js"></script>
+  <script src="assets/js/theme.js"></script>
+  <script>
+
+    function logout() {
+                fetch('/api/method/logout', {
+                  method: 'POST',
+                  headers: {
+              'Content-Type': 'application/json'
+                  }
+                }).then(response => {
+                  if (response.ok) {
+              window.location.href = 'index.html';
+                  } else {
+              alert('Logout failed. Please try again.');
+                  }
+                }).catch(error => {
+                  console.error('Error:', error);
+                  alert('An error occurred. Please try again.');
+                });
+              }
+    
+      </script>
+  <!-- <script src="index.js"></script> -->
+ 
+        
+</body>
+
+</html>

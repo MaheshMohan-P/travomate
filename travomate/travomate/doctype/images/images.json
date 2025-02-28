@@ -1,0 +1,31 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-02-20 09:46:34.762788",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "images"
+ ],
+ "fields": [
+  {
+   "columns": 10,
+   "fieldname": "images",
+   "fieldtype": "Attach",
+   "in_list_view": 1,
+   "label": "Images"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-02-20 09:55:03.516979",
+ "modified_by": "Administrator",
+ "module": "Travomate",
+ "name": "Images",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
