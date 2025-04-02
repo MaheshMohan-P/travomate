@@ -6,96 +6,91 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "details_section",
   "traveler",
   "traveler_name",
-  "column_break_dwfg",
   "guide",
   "guide_name",
-  "section_break_dzxb",
   "rating",
   "review_text",
   "review_date",
-  "add_trip_images_section",
-  "add_images"
+  "booking",
+  "trip_date",
+  "guide_reply",
+  "reply_date"
  ],
  "fields": [
   {
+   "fieldname": "booking",
+   "fieldtype": "Link",
+   "label": "Booking Reference",
+   "options": "Booking"
+  },
+  {
    "fieldname": "traveler",
    "fieldtype": "Link",
-   "in_list_view": 1,
    "label": "Traveler",
-   "options": "Traveler",
-   "reqd": 1
+   "options": "Traveler"
   },
   {
    "fetch_from": "traveler.full_name",
    "fieldname": "traveler_name",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "label": "Traveler Name",
-   "options": "Traveler",
    "read_only": 1
   },
   {
    "fieldname": "guide",
    "fieldtype": "Link",
    "label": "Guide",
-   "options": "Guide",
-   "reqd": 1
+   "options": "Guide"
   },
   {
    "fetch_from": "guide.full_name",
    "fieldname": "guide_name",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "label": "Guide Name",
-   "options": "Guide",
    "read_only": 1
   },
   {
-   "fieldname": "column_break_dwfg",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "section_break_dzxb",
-   "fieldtype": "Section Break",
-   "label": "Review Details"
-  },
-  {
    "fieldname": "rating",
-   "fieldtype": "Select",
-   "label": "Rating",
-   "options": "0\n1\n2\n3\n4\n5"
+   "fieldtype": "Int",
+   "label": "Rating (1-5)"
   },
   {
    "fieldname": "review_text",
    "fieldtype": "Text",
-   "label": "Review Text"
+   "label": "Review Comments"
   },
   {
+   "default": "Today",
    "fieldname": "review_date",
+   "fieldtype": "Date",
+   "label": "Review Date",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "booking.end_date",
+   "fieldname": "trip_date",
+   "fieldtype": "Date",
+   "label": "Trip Date",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.is_approved",
+   "fieldname": "guide_reply",
+   "fieldtype": "Text",
+   "label": "Guide's Response"
+  },
+  {
+   "fieldname": "reply_date",
    "fieldtype": "Datetime",
-   "label": "Review Date"
-  },
-  {
-   "fieldname": "add_trip_images_section",
-   "fieldtype": "Section Break",
-   "label": "Add Trip Images"
-  },
-  {
-   "fieldname": "add_images",
-   "fieldtype": "Table",
-   "label": "Add Images",
-   "options": "Images"
-  },
-  {
-   "fieldname": "details_section",
-   "fieldtype": "Section Break",
-   "label": "Details"
+   "label": "Reply Date",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-02-20 16:39:42.260678",
+ "modified": "2025-04-01 21:59:49.239111",
  "modified_by": "Administrator",
  "module": "Travomate",
  "name": "Review",
@@ -112,6 +107,16 @@
    "report": 1,
    "role": "System Manager",
    "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "Traveler"
+  },
+  {
+   "read": 1,
+   "role": "Guide",
    "write": 1
   }
  ],

@@ -18,11 +18,16 @@
   "nationality",
   "profile_picture",
   "language_spoken",
-  "identification_document"
+  "identification_document",
+  "column_break_cnsd",
+  "experience",
+  "rating",
+  "pricing",
+  "travel_zone"
  ],
  "fields": [
   {
-   "fetch_from": "user.full_name",
+   "fetch_from": "user.first_name",
    "fieldname": "full_name",
    "fieldtype": "Link",
    "label": "Full Name",
@@ -89,13 +94,39 @@
   },
   {
    "fieldname": "phone",
-   "fieldtype": "Phone",
+   "fieldtype": "Data",
    "label": "Phone Number"
+  },
+  {
+   "fieldname": "experience",
+   "fieldtype": "Int",
+   "label": "Experience"
+  },
+  {
+   "default": "0",
+   "fieldname": "rating",
+   "fieldtype": "Float",
+   "label": "Rating"
+  },
+  {
+   "fieldname": "column_break_cnsd",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "pricing",
+   "fieldtype": "Currency",
+   "label": "Pricing"
+  },
+  {
+   "fieldname": "travel_zone",
+   "fieldtype": "Link",
+   "label": "Travel Zone",
+   "options": "Travel Zone"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-02-28 17:20:28.287334",
+ "modified": "2025-03-19 11:52:27.516917",
  "modified_by": "Administrator",
  "module": "Travomate",
  "name": "Guide",
@@ -112,6 +143,18 @@
    "read": 1,
    "report": 1,
    "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Guide",
    "share": 1,
    "write": 1
   }

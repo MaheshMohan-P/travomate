@@ -5,9 +5,41 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ frappe.session.csrf_token }}">
   <title>Guide Dashboard | Travomate</title>
   <link href="assets/css/theme.css" rel="stylesheet" />
-  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .rating-stars {
+      color: #ffc107;
+      font-size: 1.2rem;
+    }
+    .review-card {
+      transition: all 0.3s ease;
+    }
+    .review-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    .booking-status-badge {
+      font-size: 0.8rem;
+      padding: 0.35rem 0.65rem;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 2rem;
+      color: #6c757d;
+    }
+    .empty-state i {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+    #loadingSpinner {
+      display: none;
+      text-align: center;
+      padding: 2rem;
+    }
+  </style>
 </head>
 
 <body>
@@ -15,17 +47,17 @@
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-light fixed-top py-5 d-block" data-navbar-on-scroll="data-navbar-on-scroll">
       <div class="container">
-        <a class="navbar-brand" href="index.html"><img src="assets/img/logo.svg" height="100" alt="logo" /></a>
+        <a class="navbar-brand" href="index.html"><img src="/assets/img/icon2.png" height="100" alt="logo" /></a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
           <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse border-top border-lg-0 mt-4 mt-lg-0" id="navbarSupportedContent">
           <ul class="navbar-nav ms-auto pt-2 pt-lg-0 font-base align-items-lg-center align-items-start">
             <li class="nav-item px-3 px-xl-4"><a class="nav-link fw-medium" href="/guide_profile">Profile</a></li>
-            <li class="nav-item px-3 px-xl-4"><a class="nav-link fw-medium" href="#bookings">Bookings</a></li>
+            <li class="nav-item px-3 px-xl-4"><a class="nav-link fw-medium" href="/travel_zone">Travel Zone</a></li>
             <li class="nav-item px-3 px-xl-4"><a class="nav-link fw-medium" href="#reviews">Reviews</a></li>
-            <li class="nav-item px-3 px-xl-4"><a class="nav-link fw-medium" href="#availability">Availability</a></li>
-            <li class="nav-item px-3 px-xl-4"><a class="btn btn-outline-dark order-1 order-lg-0 fw-medium" href="#"  onclick="logout()">Logout</a></li>
+            <li class="nav-item px-3 px-xl-4"><a class="nav-link fw-medium" href="/booking_requests">Bookings</a></li>
+            <li class="nav-item px-3 px-xl-4"><a class="btn btn-outline-dark order-1 order-lg-0 fw-medium" href="#" onclick="logout()">Logout</a></li>
           </ul>
         </div>
       </div>
@@ -37,9 +69,17 @@
       <div class="container">
         <div class="row align-items-center">
           <div class="col-md-7 col-lg-6 text-md-start text-center py-6">
-            <h4 class="fw-bold text-danger mb-3">Welcome Back, Guide!</h4>
+            <h4 class="fw-bold text-danger mb-3">Welcome Back, <span id="guideName"></span>!</h4>
             <h1 class="hero-title">Manage Your Bookings and Reviews</h1>
             <p class="mb-4 fw-medium">Stay updated with your bookings, respond to reviews, and manage your availability.</p>
+            <div class="d-flex align-items-center justify-content-center justify-content-md-start">
+              <div class="rating-stars me-2">
+                <span id="guideRatingStars"></span>
+              </div>
+              <span id="guideRatingText" class="fw-bold"></span>
+              <span class="mx-2">•</span>
+              <span id="totalReviewsCount"></span>
+            </div>
           </div>
           <div class="col-md-5 col-lg-6 order-0 order-md-1 text-end">
             <img class="pt-7 pt-md-0 hero-img" src="assets/img/hero/guide-dashboard.png" alt="Guide Dashboard" />
@@ -53,36 +93,55 @@
       <div class="container">
         <div class="mb-7 text-center">
           <h5 class="text-secondary">Bookings</h5>
-          <h3 class="fs-xl-10 fs-lg-8 fs-7 fw-bold font-cursive text-capitalize">Upcoming and Past Bookings</h3>
+          <h3 class="fs-xl-10 fs-lg-8 fs-7 fw-bold font-cursive text-capitalize">Manage Your Bookings</h3>
         </div>
-        <div class="row">
-          <div class="col-lg-4 col-md-6 mb-6">
-            <div class="card service-card shadow-hover rounded-3 text-center align-items-center">
-              <div class="card-body p-xxl-5 p-4">
-                <img src="assets/img/bookings/upcoming.png" width="75" alt="Upcoming Bookings" />
-                <h4 class="mb-3">Upcoming Bookings</h4>
-                <p class="mb-0 fw-medium">View and manage your upcoming bookings.</p>
-              </div>
+        
+        <!-- Booking Status Tabs -->
+        <ul class="nav nav-tabs mb-4" id="bookingTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" type="button" role="tab">Pending</button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="confirmed-tab" data-bs-toggle="tab" data-bs-target="#confirmed" type="button" role="tab">Confirmed</button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="completed-tab" data-bs-toggle="tab" data-bs-target="#completed" type="button" role="tab">Completed</button>
+          </li>
+        </ul>
+        
+        <!-- Booking Tab Content -->
+        <div class="tab-content" id="bookingTabContent">
+          <div class="tab-pane fade show active" id="pending" role="tabpanel" aria-labelledby="pending-tab">
+            <div id="pendingBookings" class="row"></div>
+            <div id="pendingEmpty" class="empty-state hidden">
+              <i class="fas fa-calendar-check"></i>
+              <h5>No Pending Bookings</h5>
+              <p>You don't have any pending booking requests</p>
             </div>
           </div>
-          <div class="col-lg-4 col-md-6 mb-6">
-            <div class="card service-card shadow-hover rounded-3 text-center align-items-center">
-              <div class="card-body p-xxl-5 p-4">
-                <img src="assets/img/bookings/past.png" width="75" alt="Past Bookings" />
-                <h4 class="mb-3">Past Bookings</h4>
-                <p class="mb-0 fw-medium">Review your past bookings and feedback.</p>
-              </div>
+          <div class="tab-pane fade" id="confirmed" role="tabpanel" aria-labelledby="confirmed-tab">
+            <div id="confirmedBookings" class="row"></div>
+            <div id="confirmedEmpty" class="empty-state hidden">
+              <i class="fas fa-calendar-alt"></i>
+              <h5>No Confirmed Bookings</h5>
+              <p>You don't have any upcoming confirmed bookings</p>
             </div>
           </div>
-          <div class="col-lg-4 col-md-6 mb-6">
-            <div class="card service-card shadow-hover rounded-3 text-center align-items-center">
-              <div class="card-body p-xxl-5 p-4">
-                <img src="assets/img/bookings/availability.png" width="75" alt="Update Availability" />
-                <h4 class="mb-3">Update Availability</h4>
-                <p class="mb-0 fw-medium">Set your availability for new bookings.</p>
-              </div>
+          <div class="tab-pane fade" id="completed" role="tabpanel" aria-labelledby="completed-tab">
+            <div id="completedBookings" class="row"></div>
+            <div id="completedEmpty" class="empty-state hidden">
+              <i class="fas fa-history"></i>
+              <h5>No Completed Bookings</h5>
+              <p>Your completed bookings will appear here</p>
             </div>
           </div>
+        </div>
+        
+        <div id="loadingSpinner" class="text-center py-5">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="mt-2">Loading your bookings...</p>
         </div>
       </div>
     </section>
@@ -92,30 +151,45 @@
       <div class="container">
         <div class="mb-7 text-center">
           <h5 class="text-secondary">Reviews</h5>
-          <h3 class="fs-xl-10 fs-lg-8 fs-7 fw-bold font-cursive text-capitalize">What Travelers Say About You</h3>
+          <h3 class="fs-xl-10 fs-lg-8 fs-7 fw-bold font-cursive text-capitalize">Traveler Feedback</h3>
         </div>
+        
         <div class="row">
-          <div class="col-md-6 mb-4">
-            <div class="card overflow-hidden shadow">
-              <div class="card-body py-4 px-3">
-                <h4 class="text-secondary fw-medium">Recent Reviews</h4>
-                <ul class="list-unstyled">
-                  <li class="mb-2">"Amazing guide! Highly recommended." - Sarah</li>
-                  <li class="mb-2">"Very knowledgeable and friendly." - John</li>
-                </ul>
+          <div class="col-md-8 mx-auto">
+            <!-- Reviews Stats -->
+            <div class="card mb-4 shadow">
+              <div class="card-body text-center">
+                <div class="row">
+                  <div class="col-md-4 border-end">
+                    <h2 id="averageRating" class="display-4">0.0</h2>
+                    <p class="text-muted">Average Rating</p>
+                  </div>
+                  <div class="col-md-4 border-end">
+                    <h2 id="totalReviewsCount" class="display-4">0</h2>
+                    <p class="text-muted">Total Reviews</p>
+                  </div>
+                  <div class="col-md-4">
+                    <h2 id="repliesCount" class="display-4">0</h2>
+                    <p class="text-muted">Replies Sent</p>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-          <div class="col-md-6 mb-4">
-            <div class="card overflow-hidden shadow">
-              <div class="card-body py-4 px-3">
-                <h4 class="text-secondary fw-medium">Respond to Reviews</h4>
-                <form>
-                  <div class="mb-3">
-                    <textarea class="form-control" placeholder="Your Response" rows="3" required></textarea>
-                  </div>
-                  <button type="submit" class="btn btn-primary">Submit</button>
-                </form>
+            
+            <!-- Reviews List -->
+            <div id="reviewsList" class="mb-5"></div>
+            
+            <!-- Empty State -->
+            <div id="reviewsEmpty" class="empty-state">
+              <i class="fas fa-comment-alt"></i>
+              <h5>No Reviews Yet</h5>
+              <p>Your reviews from travelers will appear here</p>
+            </div>
+            
+            <!-- Loading Spinner -->
+            <div id="reviewsLoading" class="text-center py-5" style="display: none;">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
               </div>
             </div>
           </div>
@@ -127,36 +201,551 @@
     <footer class="py-5 text-center">
       <p class="mb-0 text-secondary fs--1 fw-medium">All rights reserved@travomate.co</p>
     </footer>
+    
+    <!-- Reply Modal -->
+    <div class="modal fade" id="replyModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Reply to Review</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="review-content mb-3">
+              <div class="d-flex justify-content-between mb-2">
+                <strong id="reviewTravelerName"></strong>
+                <div class="rating-stars" id="reviewModalRating"></div>
+              </div>
+              <p id="reviewModalComment" class="mb-3"></p>
+              <small class="text-muted" id="reviewModalDate"></small>
+            </div>
+            <form id="replyForm">
+              <input type="hidden" id="reviewId">
+              <div class="mb-3">
+                <label for="guideReply" class="form-label">Your Response</label>
+                <textarea class="form-control" id="guideReply" rows="3" required></textarea>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" id="submitReplyBtn">Submit Reply</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </main>
 
   <!-- Scripts -->
   <script src="vendors/@popperjs/popper.min.js"></script>
   <script src="vendors/bootstrap/bootstrap.min.js"></script>
   <script src="assets/js/theme.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script>
+    $(document).ready(function() {
+      // Load guide data and bookings/reviews
+      loadGuideData();
+      fetchGuideBookings();
+      fetchGuideReviews();
+    });
 
-    function logout() {
-                fetch('/api/method/logout', {
-                  method: 'POST',
-                  headers: {
-              'Content-Type': 'application/json'
-                  }
-                }).then(response => {
-                  if (response.ok) {
-              window.location.href = 'index.html';
-                  } else {
-              alert('Logout failed. Please try again.');
-                  }
-                }).catch(error => {
-                  console.error('Error:', error);
-                  alert('An error occurred. Please try again.');
-                });
-              }
+    // Load guide profile data
+    function loadGuideData() {
+      const guideEmail = "{{ frappe.session.user }}";
+      
+      $.ajax({
+        url: "/api/method/frappe.client.get",
+        type: "GET",
+        headers: {
+          "X-Frappe-CSRF-Token": $('meta[name="csrf-token"]').attr("content"),
+        },
+        data: {
+          doctype: "Guide",
+          filters: JSON.stringify({ user: guideEmail }),
+          fields: JSON.stringify(["full_name", "rating", "total_reviews"])
+        },
+        success: function(response) {
+          const guide = response.message;
+          $("#guideName").text(guide.full_name);
+          $("#guideRatingText").text(guide.rating || "No ratings");
+          $("#totalReviews").text(`(${guide.total_reviews || 0} reviews)`);
+          
+          // Render star rating
+          renderStars(guide.rating || 0, "#guideRatingStars");
+        }
+      });
+    }
+
+    // Fetch guide's bookings
+    function fetchGuideBookings() {
+      $("#loadingSpinner").show();
+      
+      $.ajax({
+        url: "/api/method/travomate.custom_app.get_guide_bookings",
+        type: "GET",
+        headers: {
+          "X-Frappe-CSRF-Token": $('meta[name="csrf-token"]').attr("content"),
+        },
+        data: {
+          guide_email: "{{ frappe.session.user }}"
+        },
+        success: function(response) {
+          $("#loadingSpinner").hide();
+          
+          if (response.message && response.message.status === "success") {
+            const bookings = response.message.bookings;
+            renderBookings(bookings);
+          } else {
+            showErrorToast("Failed to load bookings");
+          }
+        },
+        error: function() {
+          $("#loadingSpinner").hide();
+          showErrorToast("Error loading bookings");
+        }
+      });
+    }
+
+    // Render bookings by status
+    function renderBookings(bookings) {
+      const pending = bookings.filter(b => b.status === "Pending");
+      const confirmed = bookings.filter(b => b.status === "Confirmed");
+      const completed = bookings.filter(b => b.status === "Completed");
+      
+      renderBookingList(pending, "#pendingBookings", "#pendingEmpty");
+      renderBookingList(confirmed, "#confirmedBookings", "#confirmedEmpty");
+      renderBookingList(completed, "#completedBookings", "#completedEmpty");
+    }
+
+    // Render booking cards
+    function renderBookingList(bookings, containerId, emptyStateId) {
+      const container = $(containerId);
+      const emptyState = $(emptyStateId);
+      
+      container.empty();
+      
+      if (bookings.length === 0) {
+        emptyState.removeClass("hidden");
+        return;
+      }
+      
+      emptyState.addClass("hidden");
+      
+      bookings.forEach(booking => {
+        const card = createBookingCard(booking);
+        container.append(card);
+      });
+    }
+
+    // Create booking card HTML
+    function createBookingCard(booking) {
+      const badgeClass = {
+        "Pending": "bg-warning",
+        "Confirmed": "bg-success",
+        "Completed": "bg-info"
+      }[booking.status] || "bg-secondary";
+      
+      const dates = `${formatDate(booking.start_date)} - ${formatDate(booking.end_date)}`;
+      
+      return `
+        <div class="col-md-6 col-lg-4 mb-4">
+          <div class="card h-100 shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <h5 class="mb-0">${booking.traveler_name || "Traveler"}</h5>
+              <span class="badge ${badgeClass} booking-status-badge">${booking.status}</span>
+            </div>
+            <div class="card-body">
+              <p class="card-text">
+                <strong><i class="fas fa-calendar-alt me-2"></i>Dates:</strong> ${dates}<br>
+                <strong><i class="fas fa-users me-2"></i>Travelers:</strong> ${booking.num_travelers}<br>
+                <strong><i class="fas fa-map-marker-alt me-2"></i>Location:</strong> ${booking.district}, ${booking.area}<br>
+                <strong><i class="fas fa-sticky-note me-2"></i>Notes:</strong> ${booking.notes || "None"}
+              </p>
+              ${booking.status === "Pending" ? `
+                <div class="d-grid gap-2">
+                  <button class="btn btn-sm btn-success" onclick="updateBookingStatus('${booking.name}', 'Confirmed')">
+                    <i class="fas fa-check me-2"></i>Accept
+                  </button>
+                  <button class="btn btn-sm btn-outline-danger" onclick="showRejectModal('${booking.name}')">
+                    <i class="fas fa-times me-2"></i>Reject
+                  </button>
+                </div>
+              ` : ""}
+            </div>
+            <div class="card-footer bg-transparent">
+              <small class="text-muted">Ref: ${booking.name}</small>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Update booking status
+    function updateBookingStatus(bookingId, status, rejectionReason = "") {
+      $.ajax({
+        url: "/api/method/travomate.custom_app.update_booking_status",
+        type: "POST",
+        headers: {
+          "X-Frappe-CSRF-Token": $('meta[name="csrf-token"]').attr("content"),
+        },
+        data: {
+          booking_id: bookingId,
+          status: status,
+          rejection_reason: rejectionReason
+        },
+        success: function(response) {
+          if (response.message.status === "success") {
+            showSuccessToast(`Booking ${status.toLowerCase()} successfully`);
+            fetchGuideBookings();
+          } else {
+            showErrorToast(response.message.message || "Failed to update booking");
+          }
+        },
+        error: function() {
+          showErrorToast("Error updating booking status");
+        }
+      });
+    }
+
+    // Show reject booking modal
+    function showRejectModal(bookingId) {
+      const modal = $(`
+        <div class="modal fade" id="rejectModal" tabindex="-1">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">Reject Booking</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                <div class="mb-3">
+                  <label for="rejectionReason" class="form-label">Reason for Rejection</label>
+                  <textarea class="form-control" id="rejectionReason" rows="3" required></textarea>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="updateBookingStatus('${bookingId}', 'Cancelled', $('#rejectionReason').val())">Reject Booking</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `);
+      
+      $('body').append(modal);
+      modal.modal('show');
+      
+      modal.on('hidden.bs.modal', function() {
+        modal.remove();
+      });
+    }
+
+    // Fetch guide's reviews
+function fetchGuideReviews() {
+    console.log("Fetching reviews for guide:", "{{ frappe.session.user }}");
+    $("#reviewsLoading").show();
+    $("#reviewsEmpty").addClass("hidden");
     
-      </script>
-  <!-- <script src="index.js"></script> -->
- 
-        
-</body>
+    $.ajax({
+        url: "/api/method/travomate.custom_app.get_guide_reviews",
+        type: "GET",
+        headers: {
+            "X-Frappe-CSRF-Token": $('meta[name="csrf-token"]').attr("content"),
+        },
+        data: {
+            guide_email: "{{ frappe.session.user }}"
+        },
+        success: function(response) {
+            console.log("Full API Response:", response);
+            $("#reviewsLoading").hide();
+            
+            if (response.message) {
+                if (response.message.status === "success") {
+                    if (response.message.reviews && response.message.reviews.length > 0) {
+                        console.log("Reviews data:", response.message.reviews);
+                        renderReviews(response.message.reviews);
+                        updateReviewStats(response.message.reviews);
+                    } else {
+                        console.log("No reviews found (normal case)");
+                        $("#reviewsEmpty").removeClass("hidden")
+                            .html(`<i class="fas fa-comment-alt fa-3x mb-3"></i>
+                                  <h5>No Reviews Yet</h5>
+                                  <p>You haven't received any reviews yet.</p>`);
+                    }
+                } else {
+                    const errorMsg = response.message.message || "Unknown error occurred";
+                    console.error("Backend Error:", errorMsg);
+                    $("#reviewsEmpty").removeClass("hidden")
+                        .html(`<i class="fas fa-exclamation-triangle fa-3x mb-3 text-danger"></i>
+                              <h5>Error Loading Reviews</h5>
+                              <p>${errorMsg}</p>
+                              <button class="btn btn-sm btn-primary mt-2" onclick="fetchGuideReviews()">
+                                  <i class="fas fa-sync-alt me-2"></i>Try Again
+                              </button>`);
+                }
+            } else {
+                console.error("Invalid API response structure");
+                $("#reviewsEmpty").removeClass("hidden")
+                    .html(`<i class="fas fa-exclamation-triangle fa-3x mb-3 text-danger"></i>
+                          <h5>Invalid Response</h5>
+                          <p>The server returned an unexpected response format.</p>`);
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error("AJAX Error:", status, error, xhr.responseText);
+            $("#reviewsLoading").hide();
+            $("#reviewsEmpty").removeClass("hidden")
+                .html(`<i class="fas fa-unlink fa-3x mb-3 text-danger"></i>
+                      <h5>Connection Error</h5>
+                      <p>Could not connect to server. Please check your network.</p>
+                      <button class="btn btn-sm btn-primary mt-2" onclick="fetchGuideReviews()">
+                          <i class="fas fa-sync-alt me-2"></i>Try Again
+                      </button>`);
+        }
+    });
+}
 
+function renderReviews(reviews) {
+    const container = $("#reviewsList");
+    container.empty();
+    
+    if (!reviews || reviews.length === 0) {
+        $("#reviewsEmpty").removeClass("hidden");
+        return;
+    }
+    
+    $("#reviewsEmpty").addClass("hidden");
+    
+    reviews.forEach(review => {
+        // Ensure all required fields exist
+        review.traveler_name = review.traveler_name || "Traveler";
+        review.rating = review.rating || 0;
+        review.review_text = review.review_text || "No review provided";
+        review.review_date = review.review_date || new Date().toISOString();
+        
+        const card = createReviewCard(review);
+        container.append(card);
+    });
+}
+
+function createReviewCard(review) {
+    return `
+        <div class="card review-card mb-4 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-3">
+                    <div>
+                        <h5 class="card-title mb-1">${review.traveler_name}</h5>
+                        <small class="text-muted">${formatDate(review.review_date)}</small>
+                    </div>
+                    <div class="rating-stars">
+                        ${renderStars(review.rating, null, true)}
+                    </div>
+                </div>
+                <p class="card-text mb-4">${review.review_text}</p>
+                
+                ${review.guide_reply ? `
+                    <div class="bg-light p-3 rounded mb-3">
+                        <div class="d-flex justify-content-between mb-2">
+                            <strong>Your Response</strong>
+                            <small class="text-muted">${formatDate(review.reply_date)}</small>
+                        </div>
+                        <p class="mb-0">${review.guide_reply}</p>
+                    </div>
+                ` : `
+                    <button class="btn btn-outline-primary btn-sm" 
+                            onclick="showReplyModal(
+                                '${review.name}', 
+                                '${review.traveler_name}', 
+                                ${review.rating}, 
+                                '${escapeHtml(review.review_text)}', 
+                                '${review.review_date}'
+                            )">
+                        <i class="fas fa-reply me-2"></i>Reply
+                    </button>
+                `}
+            </div>
+        </div>
+    `;
+}
+
+function showReplyModal(reviewId, travelerName, rating, reviewText, reviewDate) {
+    $("#reviewId").val(reviewId);
+    $("#reviewTravelerName").text(travelerName);
+    $("#reviewModalComment").text(reviewText || "No review provided");
+    $("#reviewModalDate").text(formatDate(reviewDate));
+    
+    // Render stars
+    const starsContainer = $("#reviewModalRating");
+    starsContainer.empty();
+    starsContainer.append(renderStars(rating, null, true));
+    
+    // Clear previous reply
+    $("#guideReply").val("");
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('replyModal'));
+    modal.show();
+}
+
+// Helper function to escape HTML for safe display
+function escapeHtml(text) {
+    return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+    // Submit reply to review
+    $("#submitReplyBtn").click(function() {
+      const reviewId = $("#reviewId").val();
+      const reply = $("#guideReply").val();
+      
+      if (!reply) {
+        showErrorToast("Please enter your response");
+        return;
+      }
+      
+      $(this).prop("disabled", true).html('<span class="spinner-border spinner-border-sm me-2"></span> Submitting...');
+      
+      $.ajax({
+        url: "/api/method/travomate.custom_app.submit_review_reply",
+        type: "POST",
+        headers: {
+          "X-Frappe-CSRF-Token": $('meta[name="csrf-token"]').attr("content"),
+        },
+        data: {
+          review_id: reviewId,
+          reply: reply
+        },
+        success: function(response) {
+          if (response.message && response.message.status === "success") {
+            showSuccessToast("Reply submitted successfully");
+            fetchGuideReviews();
+            $("#replyModal").modal("hide");
+          } else {
+            showErrorToast(response.message?.message || "Failed to submit reply");
+            $("#submitReplyBtn").prop("disabled", false).text("Submit Reply");
+          }
+        },
+        error: function() {
+          showErrorToast("Error submitting reply");
+          $("#submitReplyBtn").prop("disabled", false).text("Submit Reply");
+        }
+      });
+    });
+
+    // Update review statistics
+    function updateReviewStats(reviews) {
+      const totalReviews = reviews.length;
+      const repliedReviews = reviews.filter(r => r.guide_reply).length;
+      const avgRating = totalReviews > 0 ? 
+        (reviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews).toFixed(1) : 0;
+      
+      $("#averageRating").text(avgRating);
+      $("#totalReviewsCount").text(totalReviews);
+      $("#repliesCount").text(repliedReviews);
+    }
+
+    // Helper function to render star ratings
+    function renderStars(rating, containerId, asHTML = false) {
+      const fullStars = Math.floor(rating);
+      const hasHalfStar = rating % 1 >= 0.5;
+      const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+      
+      let stars = [];
+      
+      // Full stars
+      for (let i = 0; i < fullStars; i++) {
+        stars.push('<i class="fas fa-star"></i>');
+      }
+      
+      // Half star
+      if (hasHalfStar) {
+        stars.push('<i class="fas fa-star-half-alt"></i>');
+      }
+      
+      // Empty stars
+      for (let i = 0; i < emptyStars; i++) {
+        stars.push('<i class="far fa-star"></i>');
+      }
+      
+      if (asHTML) {
+        return stars.join("");
+      }
+      
+      if (containerId) {
+        $(containerId).html(stars.join(""));
+      }
+      
+      return stars;
+    }
+
+    // Helper function to format dates
+    function formatDate(dateString) {
+      if (!dateString) return "Not specified";
+      const date = new Date(dateString);
+      return date.toLocaleDateString();
+    }
+
+    // Show success toast
+    function showSuccessToast(message) {
+      const toast = $(`
+        <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+          <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-success text-white">
+              <strong class="me-auto">Success</strong>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body">
+              ${message}
+            </div>
+          </div>
+        </div>
+      `);
+      $('body').append(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    // Show error toast
+    function showErrorToast(message) {
+      const toast = $(`
+        <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+          <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-danger text-white">
+              <strong class="me-auto">Error</strong>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body">
+              ${message}
+            </div>
+          </div>
+        </div>
+      `);
+      $('body').append(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    // Logout function
+    function logout() {
+      fetch('/api/method/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          "X-Frappe-CSRF-Token": $('meta[name="csrf-token"]').attr("content"),
+        },
+      }).then(response => {
+        if (response.ok) {
+          window.location.href = 'index.html';
+        } else {
+          alert('Logout failed. Please try again.');
+        }
+      }).catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred. Please try again.');
+      });
+    }
+  </script>
+</body>
 </html>

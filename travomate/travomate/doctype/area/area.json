@@ -1,0 +1,74 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "allow_rename": 1,
+ "autoname": "field:area",
+ "creation": "2025-03-08 12:35:40.185049",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "details_section",
+  "district",
+  "district_name",
+  "area",
+  "images"
+ ],
+ "fields": [
+  {
+   "fieldname": "details_section",
+   "fieldtype": "Section Break",
+   "label": "Details"
+  },
+  {
+   "fieldname": "district",
+   "fieldtype": "Link",
+   "label": "District",
+   "options": "District"
+  },
+  {
+   "fetch_from": "district.district_name",
+   "fieldname": "district_name",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "District Name",
+   "options": "District"
+  },
+  {
+   "fieldname": "area",
+   "fieldtype": "Data",
+   "label": "Area",
+   "unique": 1
+  },
+  {
+   "fieldname": "images",
+   "fieldtype": "Table",
+   "label": "Images",
+   "options": "Images"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-03-28 10:02:53.893035",
+ "modified_by": "Administrator",
+ "module": "Travomate",
+ "name": "Area",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

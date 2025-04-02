@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en-US" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ frappe.session.csrf_token }}">
+    <title>Travomate | Guide Dashboard</title>
+    <link rel="stylesheet" href="assets/css/theme.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&amp;family=Volkhov:wght@700&amp;display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+      .booking-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+      }
+      .booking-table th, .booking-table td {
+        border: 1px solid #ddd;
+        padding: 12px;
+        text-align: left;
+      }
+      .booking-table th {
+        background-color: #f2f2f2;
+        font-weight: 600;
+      }
+      .booking-table tr:hover {
+        background-color: #f9f9f9;
+      }
+      .action-buttons {
+        white-space: nowrap;
+      }
+      .action-buttons button {
+        margin-right: 5px;
+        padding: 6px 12px;
+        font-size: 14px;
+      }
+      .status-pending {
+        color: #ff9800;
+        font-weight: 500;
+      }
+      .status-confirmed {
+        color: #4caf50;
+        font-weight: 500;
+      }
+      .status-cancelled {
+        color: #f44336;
+        font-weight: 500;
+      }
+      .toast {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: #4caf50;
+        color: white;
+        padding: 15px 20px;
+        border-radius: 8px;
+        z-index: 1000;
+        max-width: 400px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        display: flex;
+        align-items: center;
+      }
+      .toast.error {
+        background: #f44336;
+      }
+      .toast-icon {
+        margin-right: 12px;
+        font-size: 20px;
+      }
+      .toast-message {
+        flex: 1;
+      }
+      .fade-out {
+        opacity: 0;
+        transform: translateY(20px);
+        transition: all 0.3s ease;
+      }
+    </style>
+  </head>
+
+  <body>
+    <main class="main" id="top">
+      <!-- Guide Dashboard -->
+      <section class="pt-8">
+        <div class="container">
+          <h3 class="text-center fw-bold mb-5">Your Booking Requests</h3>
+          <div class="row justify-content-center">
+            <div class="col-lg-12">
+              <table class="booking-table">
+                <thead>
+                  <tr>
+                    <th>Traveler</th>
+                    <th>Dates</th>
+                    <th>Travelers</th>
+                    <th>District</th>
+                    <th>Travelers</th> <!-- New column -->
+                    <th>Special Requests</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="bookingRequests">
+                  <!-- Booking requests will be populated here -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      // Enhanced toast message function
+      function showToast(message, type = "success", duration = 5000) {
+        const toast = document.createElement("div");
+        toast.className = `toast ${type === "error" ? "error" : ""}`;
+        toast.innerHTML = `
+          <div class="toast-icon">
+            ${type === "error" ? '<i class="fas fa-exclamation-circle"></i>' : '<i class="fas fa-check-circle"></i>'}
+          </div>
+          <div class="toast-message">${message}</div>
+        `;
+        document.body.appendChild(toast);
+        
+        // Auto-remove after duration
+        setTimeout(() => {
+          toast.classList.add("fade-out");
+          setTimeout(() => toast.remove(), 300);
+        }, duration);
+        
+        // Click to dismiss
+        toast.addEventListener("click", () => {
+          toast.classList.add("fade-out");
+          setTimeout(() => toast.remove(), 300);
+        });
+      }
+
+      // Get the guide's name from user session
+      async function getGuideForUser(user) {
+        try {
+          const response = await $.ajax({
+            method: "GET",
+            url: "/api/method/travomate.custom_app.get_guide_for_user",
+            headers: {
+              "X-Frappe-CSRF-Token": $('meta[name="csrf-token"]').attr("content"),
+            },
+            data: { user: user },
+          });
+          
+          if (response.message.status === "success") {
+            return response.message.guide;
+          } else {
+            throw new Error(response.message.message || "Guide profile not found");
+          }
+        } catch (error) {
+          console.error("Guide fetch error:", error);
+          throw new Error("Unable to verify guide account. Please contact support.");
+        }
+      }
+
+      async function fetchBookingRequests() {
+    try {
+      const loggedInUser = "{{ frappe.session.user }}";
+      const guide = await getGuideForUser(loggedInUser);
+      
+      const response = await $.ajax({
+        method: "GET",
+        url: "/api/method/travomate.custom_app.get_booking_requests",
+        headers: {
+          "X-Frappe-CSRF-Token": $('meta[name="csrf-token"]').attr("content"),
+        },
+        data: {
+          guide: guide,
+        },
+      });
+
+      if (response.message.status === "success") {
+        const bookings = response.message.bookings;
+        const bookingTable = document.getElementById("bookingRequests");
+        bookingTable.innerHTML = "";
+
+        if (bookings.length === 0) {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td colspan="8" style="text-align: center; padding: 20px;">
+              No booking requests found
+            </td>
+          `;
+          bookingTable.appendChild(row);
+          return;
+        }
+
+        // Fetch fellow travelers for all bookings in one request
+        const fellowTravelersResponse = await $.ajax({
+          method: "POST",
+          url: "/api/method/travomate.custom_app.get_fellow_travelers_for_bookings",
+          headers: {
+            "X-Frappe-CSRF-Token": $('meta[name="csrf-token"]').attr("content"),
+          },
+          data: JSON.stringify({
+            booking_ids: bookings.map(b => b.name)
+          }),
+          contentType: "application/json"
+        });
+
+        if (fellowTravelersResponse.message.status !== "success") {
+          throw new Error("Failed to fetch fellow travelers");
+        }
+
+        const fellowTravelersMap = fellowTravelersResponse.message.fellow_travelers || {};
+
+        bookings.forEach(booking => {
+    const row = document.createElement("tr");
+    const statusClass = `status-${booking.status.toLowerCase()}`;
+    const fellowTravelers = fellowTravelersMap[booking.name] || [];
+    
+    row.innerHTML = `
+        <td>${booking.traveler || 'N/A'}</td>
+        <td>${booking.start_date} to ${booking.end_date}</td>
+        <td>${booking.num_travelers || 1}</td>
+        <td>${booking.district || 'N/A'}</td>
+        <td>
+            ${fellowTravelers.length > 0 ? 
+                fellowTravelers.map(t => `
+                    <div class="fellow-traveler">
+                        <strong>${t.full_name}</strong><br>
+                        Age: ${t.age || 'N/A'}, Gender: ${t.gender || 'N/A'}<br>
+                        Relation: ${t.relation || 'N/A'}<br>
+                        Contact: ${t.contact_number || 'N/A'}
+                    </div>
+                `).join('') : 
+                "None"}
+        </td>
+        <td>${booking.notes || "None"}</td>
+        <td class="${statusClass}">${booking.status}</td>
+        <td class="action-buttons">
+            ${booking.status === "Pending" ? `
+                <button onclick="acceptBooking('${booking.name}')" class="btn btn-success btn-sm">
+                    <i class="fas fa-check"></i> Accept
+                </button>
+                <button onclick="rejectBooking('${booking.name}')" class="btn btn-danger btn-sm">
+                    <i class="fas fa-times"></i> Reject
+                </button>
+            ` : `
+                <span class="text-muted">No actions</span>
+            `}
+        </td>
+    `;
+    bookingTable.appendChild(row);
+});
+      } else {
+        showToast(response.message.message || "No booking requests found.", "info");
+      }
+    } catch (error) {
+      console.error("Error fetching booking requests:", error);
+      showToast("Error fetching booking requests. Please try again.", "error");
+    }
+}
+
+      // Accept Booking Request
+      async function acceptBooking(bookingId) {
+        if (!confirm("Are you sure you want to accept this booking request?")) {
+          return;
+        }
+        
+        try {
+          const response = await $.ajax({
+            method: "POST",
+            url: "/api/method/travomate.custom_app.update_booking_status",
+            headers: {
+              "X-Frappe-CSRF-Token": $('meta[name="csrf-token"]').attr("content"),
+            },
+            data: {
+              booking_id: bookingId,
+              status: "Confirmed",
+            },
+          });
+
+          if (response.message.status === "success") {
+            showToast("Booking request accepted successfully!", "success");
+            fetchBookingRequests(); // Refresh the table
+          } else {
+            throw new Error(response.message.message || "Failed to accept booking");
+          }
+        } catch (error) {
+          console.error("Error accepting booking:", error);
+          showToast(error.message || "Error accepting booking. Please try again.", "error");
+        }
+      }
+
+      async function rejectBooking(bookingId) {
+          const reason = prompt("Please enter reason for rejection:");
+          if (!reason) return;
+
+          try {
+              const response = await $.ajax({
+                  method: "POST",
+                  url: "/api/method/travomate.custom_app.reject_booking_with_reason",
+                  headers: {
+                      "X-Frappe-CSRF-Token": $('meta[name="csrf-token"]').attr("content"),
+                  },
+                  data: {
+                      booking_id: bookingId,
+                      reason: reason
+                  }
+              });
+
+              if (response.message.status === "success") {
+                  showToast("Booking rejected with reason", "success");
+                  fetchBookingRequests();
+              } else {
+                  throw new Error(response.message.message);
+              }
+          } catch (error) {
+              showToast(error.message || "Rejection failed", "error");
+          }
+      }
+
+      // Fetch booking requests on page load
+      $(document).ready(function() {
+        fetchBookingRequests();
+      });
+    </script>
+  </body>
+</html>

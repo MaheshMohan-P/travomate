@@ -1,0 +1,109 @@
+{
+    "doctype": "DocType",
+    "name": "Travel Payment",
+    "module": "Travomate",
+    "autoname": "PAY-.YYYY.-.####",
+    "title_field": "transaction_id",
+    "show_title_field_in_link": 1,
+    "fields": [
+      {
+        "fieldname": "booking",
+        "label": "Booking",
+        "fieldtype": "Link",
+        "options": "Booking"
+      },
+      {
+        "fieldname": "traveler",
+        "label": "Traveler",
+        "fieldtype": "Link",
+        "options": "Traveler",
+        "fetch_from": "booking.traveler",
+        "read_only": 1
+      },
+      {
+        "fieldname": "guide",
+        "label": "Guide",
+        "fieldtype": "Link",
+        "options": "Guide",
+        "fetch_from": "booking.guide",
+        "read_only": 1
+      },
+      {
+        "fieldname": "amount",
+        "label": "Amount",
+        "fieldtype": "Currency",
+        "default": 0,
+        "fetch_from": "booking.total_amount"
+      },
+      {
+        "fieldname": "payment_date",
+        "label": "Payment Date",
+        "fieldtype": "Date",
+        "default": "Today"
+      },
+      {
+        "fieldname": "status",
+        "label": "Status",
+        "fieldtype": "Select",
+        "options": "Draft\nCompleted\nCancelled\nFailed",
+        "default": "Draft"
+      },
+      {
+        "fieldname": "payment_method",
+        "label": "Payment Method",
+        "fieldtype": "Select",
+        "options": "Card\nUPI\nBank Transfer\nCash",
+        "default": "Cash"
+      },
+      {
+        "fieldname": "upi_id",
+        "label": "UPI ID",
+        "fieldtype": "Data",
+        "depends_on": "eval:doc.payment_method == 'UPI'",
+        "description": "Format: name@upi"
+      },
+      {
+        "fieldname": "card_reference",
+        "label": "Card Reference",
+        "fieldtype": "Data",
+        "depends_on": "eval:doc.payment_method == 'Card'",
+        "description": "Last 4 digits of card"
+      },
+      {
+        "fieldname": "bank_reference",
+        "label": "Bank Reference",
+        "fieldtype": "Data",
+        "depends_on": "eval:doc.payment_method == 'Bank Transfer'",
+        "description": "Transaction reference number"
+      },
+      {
+        "fieldname": "transaction_id",
+        "label": "Transaction ID",
+        "fieldtype": "Data",
+        "read_only": 1,
+        "allow_on_submit": 1,
+        "description": "Auto-generated on submit"
+      },
+      {
+        "fieldname": "notes",
+        "label": "Notes",
+        "fieldtype": "Text",
+        "description": "Internal remarks"
+      }
+    ],
+    "permissions": [
+      {
+        "role": "System Manager",
+        "permlevel": 0,
+        "read": 1,
+        "write": 1,
+        "create": 1,
+        "delete": 1,
+        "submit": 1,
+        "cancel": 1,
+        "amend": 1
+      }
+    ],
+    "sort_field": "modified",
+    "sort_order": "DESC"
+  }

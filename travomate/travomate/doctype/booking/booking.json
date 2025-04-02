@@ -1,0 +1,208 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "B-.#####",
+ "creation": "2025-03-08 16:25:07.034384",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "details_section",
+  "traveler",
+  "guide",
+  "travel_zone",
+  "state",
+  "district",
+  "area",
+  "start_date",
+  "end_date",
+  "daily_rate",
+  "total_amount",
+  "language_spoken",
+  "notes",
+  "payment_status",
+  "status",
+  "num_travelers",
+  "fellow_travelers",
+  "rejection_reason",
+  "is_reviewable",
+  "review_link",
+  "paid_amount",
+  "payment_date",
+  "payment_method",
+  "trip_duration",
+  "payment_reference"
+ ],
+ "fields": [
+  {
+   "fieldname": "details_section",
+   "fieldtype": "Section Break",
+   "label": "Details"
+  },
+  {
+   "fieldname": "traveler",
+   "fieldtype": "Link",
+   "label": "Traveler",
+   "options": "Traveler"
+  },
+  {
+   "fieldname": "guide",
+   "fieldtype": "Link",
+   "label": "Guide",
+   "options": "Guide"
+  },
+  {
+   "default": "Kerala",
+   "fieldname": "state",
+   "fieldtype": "Data",
+   "label": "State",
+   "read_only": 1
+  },
+  {
+   "fieldname": "district",
+   "fieldtype": "Link",
+   "label": "District",
+   "options": "District"
+  },
+  {
+   "fieldname": "start_date",
+   "fieldtype": "Date",
+   "label": "Start Date"
+  },
+  {
+   "fieldname": "end_date",
+   "fieldtype": "Date",
+   "label": "End Date"
+  },
+  {
+   "fetch_from": "travel_zone.daily_rate",
+   "fieldname": "daily_rate",
+   "fieldtype": "Link",
+   "label": "Daily Rate",
+   "options": "Travel Zone"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Text",
+   "label": "Notes"
+  },
+  {
+   "default": "Unpaid",
+   "fieldname": "payment_status",
+   "fieldtype": "Select",
+   "label": "Payment Status",
+   "options": "Unpaid\nPaid\nPartially Paid"
+  },
+  {
+   "fieldname": "language_spoken",
+   "fieldtype": "Data",
+   "label": "Language Spoken"
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Pending\nConfirmed\nCancelled\nCompleted"
+  },
+  {
+   "fieldname": "num_travelers",
+   "fieldtype": "Int",
+   "label": "Number of Travelers"
+  },
+  {
+   "depends_on": "eval:doc.status === 'Cancelled'",
+   "fieldname": "rejection_reason",
+   "fieldtype": "Text",
+   "label": "Rejection Reason",
+   "read_only": 1
+  },
+  {
+   "fieldname": "fellow_travelers",
+   "fieldtype": "Table",
+   "label": "Fellow Travelers",
+   "options": "Fellow Travelers"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_reviewable",
+   "fieldtype": "Check",
+   "label": "Is Reviewable",
+   "read_only": 1
+  },
+  {
+   "fieldname": "review_link",
+   "fieldtype": "Data",
+   "label": "Review Link",
+   "read_only": 1
+  },
+  {
+   "fieldname": "area",
+   "fieldtype": "Link",
+   "label": "Area",
+   "options": "Area"
+  },
+  {
+   "fieldname": "total_amount",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Total Amount"
+  },
+  {
+   "fieldname": "paid_amount",
+   "fieldtype": "Currency",
+   "label": "Paid Amount"
+  },
+  {
+   "fieldname": "travel_zone",
+   "fieldtype": "Link",
+   "label": "Travel Zone",
+   "options": "Travel Zone"
+  },
+  {
+   "fieldname": "payment_date",
+   "fieldtype": "Date",
+   "label": "Payment Date"
+  },
+  {
+   "fieldname": "payment_method",
+   "fieldtype": "Data",
+   "label": "Payment Method"
+  },
+  {
+   "fieldname": "trip_duration",
+   "fieldtype": "Int",
+   "label": "Trip Duration"
+  },
+  {
+   "fieldname": "payment_reference",
+   "fieldtype": "Link",
+   "label": "Payment Reference",
+   "options": "Travel Payment"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-04-02 01:55:33.730909",
+ "modified_by": "Administrator",
+ "module": "Travomate",
+ "name": "Booking",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -639,25 +639,25 @@ progress {
 
 @media (min-width: 576px) {
   .container, .container-sm {
-    max-width: 540px;
+    max-width: 600px;
   }
 }
 
 @media (min-width: 768px) {
   .container, .container-sm, .container-md {
-    max-width: 720px;
+    max-width: 800px;
   }
 }
 
 @media (min-width: 992px) {
   .container, .container-sm, .container-md, .container-lg {
-    max-width: 960px;
+    max-width: 1000px;
   }
 }
 
 @media (min-width: 1200px) {
   .container, .container-sm, .container-md, .container-lg, .container-xl {
-    max-width: 1140px;
+    max-width: 1200px;
   }
 }
 
@@ -2608,6 +2608,9 @@ progress {
   transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
   transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out, -webkit-box-shadow 0.15s ease-in-out;
 }
+
+
+
 
 @media (prefers-reduced-motion: reduce) {
   .form-control {
@@ -9329,7 +9332,7 @@ fieldset:disabled .btn {
 }
 
 .pt-8 {
-  padding-top: 5rem !important;
+  padding-top: 3rem !important;
 }
 
 .pt-9 {

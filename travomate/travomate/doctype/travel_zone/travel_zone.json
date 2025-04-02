@@ -1,0 +1,110 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "TZ-.##### ",
+ "creation": "2025-03-06 09:57:23.624232",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "details_section",
+  "guide",
+  "state",
+  "district",
+  "area",
+  "language_spoken",
+  "availability",
+  "daily_rate",
+  "description",
+  "booked_dates",
+  "areas"
+ ],
+ "fields": [
+  {
+   "fieldname": "details_section",
+   "fieldtype": "Section Break",
+   "label": "Details"
+  },
+  {
+   "fieldname": "guide",
+   "fieldtype": "Link",
+   "label": "Guide",
+   "options": "Guide"
+  },
+  {
+   "default": "Kerala",
+   "fieldname": "state",
+   "fieldtype": "Data",
+   "label": "State",
+   "read_only": 1
+  },
+  {
+   "fieldname": "district",
+   "fieldtype": "Link",
+   "label": "District",
+   "options": "District"
+  },
+  {
+   "fieldname": "area",
+   "fieldtype": "Link",
+   "label": "Area",
+   "options": "Area"
+  },
+  {
+   "fieldname": "language_spoken",
+   "fieldtype": "Small Text",
+   "label": "Language Spoken"
+  },
+  {
+   "fieldname": "availability",
+   "fieldtype": "Date",
+   "label": "Availability"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Text",
+   "label": "Description"
+  },
+  {
+   "fieldname": "daily_rate",
+   "fieldtype": "Currency",
+   "label": "Daily Rate"
+  },
+  {
+   "fieldname": "booked_dates",
+   "fieldtype": "Table",
+   "label": "Booked Dates",
+   "options": "Booked Dates"
+  },
+  {
+   "fieldname": "areas",
+   "fieldtype": "Table",
+   "label": "Areas",
+   "options": "TZ Areas"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-03-30 23:04:17.573009",
+ "modified_by": "Administrator",
+ "module": "Travomate",
+ "name": "Travel Zone",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

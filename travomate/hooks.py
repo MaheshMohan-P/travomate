@@ -245,3 +245,25 @@ signup_form_template = "travomate/templates/register.html"
 
 # app_include_css = "/assets/css/theme.css"
 # web_include_css = "/assets/css/theme.css"
+
+# csrf_exempt = ["*"]  # Disable CSRF for all methods
+
+app_include_js = ["/assets/frappe/js/frappe-web.min.js"]
+
+
+whitelisted = [
+    "travomate.custom_app.update_guide_profile",
+    "travomate.custom_app.update_traveler_profile"
+]
+
+api_methods = ["custom_app.api.update_traveler_profile",
+               "custom_app.api.update_guide_profile"
+               ]
+
+scheduler_events = {
+    "cron": {
+        "0 0 * * *": [  # Runs daily at midnight (00:00)
+            "travomate.travomate.doctype.booking.booking.mark_completed_trips"
+        ]
+    }
+}

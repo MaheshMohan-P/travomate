@@ -30,7 +30,7 @@
    "label": "Traveler Details"
   },
   {
-   "fetch_from": "user.full_name",
+   "fetch_from": "user.first_name",
    "fieldname": "full_name",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -67,7 +67,7 @@
   },
   {
    "fieldname": "emergency_contact",
-   "fieldtype": "Phone",
+   "fieldtype": "Data",
    "label": "Emergency Contact"
   },
   {
@@ -108,14 +108,14 @@
   },
   {
    "fieldname": "phone",
-   "fieldtype": "Phone",
+   "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Phone Number"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-02-28 16:28:07.861955",
+ "modified": "2025-03-07 15:18:03.183228",
  "modified_by": "Administrator",
  "module": "Travomate",
  "name": "Traveler",
@@ -132,6 +132,18 @@
    "read": 1,
    "report": 1,
    "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Traveler",
    "share": 1,
    "write": 1
   }

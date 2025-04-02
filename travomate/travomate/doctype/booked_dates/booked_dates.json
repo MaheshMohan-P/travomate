@@ -1,28 +1,28 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2025-03-28 10:01:58.472180",
+ "creation": "2025-03-08 18:36:09.371876",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "images"
+  "date"
  ],
  "fields": [
   {
-   "fieldname": "images",
-   "fieldtype": "Attach",
+   "fieldname": "date",
+   "fieldtype": "Date",
    "in_list_view": 1,
-   "label": "Images"
+   "label": "Date"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-03-28 10:02:19.035058",
+ "modified": "2025-03-08 18:37:52.807735",
  "modified_by": "Administrator",
  "module": "Travomate",
- "name": "Images",
+ "name": "Booked Dates",
  "owner": "Administrator",
  "permissions": [],
  "sort_field": "modified",

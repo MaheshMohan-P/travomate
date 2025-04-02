@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="en-US" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ frappe.session.csrf_token }}">
+    <title>Travomate | Book a Guide</title>
+    <link rel="stylesheet" href="assets/css/theme.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&amp;family=Volkhov:wght@700&amp;display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+      .guide-details {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 15px;
+        margin-top: 20px;
+      }
+      .guide-details h5 {
+        margin-bottom: 10px;
+      }
+      .guide-details p {
+        margin: 5px 0;
+      }
+      .wishlist-btn {
+        background: #ffcc00;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      .wishlist-btn.added {
+        background: #28a745;
+        color: white;
+      }
+      .wishlist-btn.added::after {
+        content: "✓";
+        margin-left: 5px;
+      }
+      #wishlistButton {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1000;
+      }
+      .hidden {
+        display: none;
+      }
+      .toast {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: #28a745;
+        color: white;
+        padding: 15px 20px;
+        border-radius: 8px;
+        z-index: 1000;
+        max-width: 400px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        display: flex;
+        align-items: center;
+      }
+      .toast.error {
+        background: #dc3545;
+      }
+      .toast-icon {
+        margin-right: 12px;
+        font-size: 20px;
+      }
+      .toast-message {
+        flex: 1;
+      }
+      .fade-out {
+        opacity: 0;
+        transform: translateY(20px);
+        transition: all 0.3s ease;
+      }
+      .booking-success {
+        line-height: 1.6;
+      }
+      .booking-success strong {
+        display: inline-block;
+        min-width: 80px;
+      }
+      /* Fellow Travelers Table Styles */
+      #fellowTravelersTable {
+        width: 100%;
+        margin-bottom: 1rem;
+        border-collapse: collapse;
+      }
+      #fellowTravelersTable th, 
+      #fellowTravelersTable td {
+        padding: 0.75rem;
+        vertical-align: top;
+        border: 1px solid #dee2e6;
+      }
+      #fellowTravelersTable thead th {
+        vertical-align: bottom;
+        border-bottom: 2px solid #dee2e6;
+        background-color: #f8f9fa;
+      }
+      #fellowTravelersTable tbody tr:nth-of-type(odd) {
+        background-color: rgba(0,0,0,.05);
+      }
+      .remove-traveler {
+        cursor: pointer;
+        color: #dc3545;
+        background: none;
+        border: none;
+      }
+      .is-invalid {
+        border-color: #dc3545 !important;
+      }
+      .invalid-feedback {
+          width: 100%;
+          margin-top: 0.25rem;
+          font-size: 0.875em;
+          color: #dc3545;
+      }
+
+      /* Booking Success Modal Styles */
+.booking-success-details {
+    font-size: 1.1rem;
+}
+
+.booking-success-details p {
+    margin-bottom: 0.8rem;
+}
+
+#bookingStatus {
+    font-size: 0.9em;
+    padding: 0.35em 0.65em;
+}
+    </style>
+  </head>
+
+  <body>
+    <main class="main" id="top">
+      <!-- Wishlist Button -->
+      <button id="wishlistButton" class="btn btn-primary">View Wishlist</button>
+
+      <!-- Booking Section -->
+      <section class="pt-8">
+        <div class="container">
+          <h3 class="text-center fw-bold mb-5">Book a Guide</h3>
+          <div class="row justify-content-center">
+            <div class="col-lg-8">
+              <!-- District Selection -->
+              <div class="card mb-4">
+                <div class="card-body">
+                  <h5 class="card-title">Select District</h5>
+                  <form id="districtSelectionForm">
+                    <div class="mb-3">
+                      <label for="district" class="form-label">District</label>
+                      <select class="form-select" id="district" required>
+                        <option value="">Select District</option>
+                        {% for district in districts %}
+                          <option value="{{ district.name }}">{{ district.name }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                  </form>
+                </div>
+              </div>
+
+              <!-- Guide Selection -->
+              <div class="card mb-4">
+                <div class="card-body">
+                  <h5 class="card-title">Select a Guide</h5>
+                  <form id="guideSelectionForm">
+                    <div class="mb-3">
+                      <label for="guide" class="form-label">Guide</label>
+                      <select class="form-select" id="guide" required disabled>
+                        <option value="">Select a Guide</option>
+                      </select>
+                    </div>
+                  </form>
+                </div>
+              </div>
+
+              <!-- Guide Details -->
+              <div id="guideDetails" class="guide-details hidden">
+                <h5 id="guideName"></h5>
+                <p><strong>Rating:</strong> <span id="guideRating"></span></p>
+                <p><strong>Languages:</strong> <span id="guideLanguages"></span></p>
+                <p><strong>Travel Zones:</strong> <span id="guideTravelZones"></span></p>
+                <p><strong>Areas:</strong> <span id="guideAreas"></span></p>
+                <p><strong>Experience:</strong> <span id="guideExperience"></span></p>
+                <p><strong>Daily Rate:</strong> <span id="guidePricing"></span></p>
+                <button class="wishlist-btn" id="addToWishlistBtn">Add to Wishlist</button>
+            </div>
+
+              <!-- Booking Form -->
+              <div class="card mt-4">
+                <div class="card-body">
+                  <h5 class="card-title">Trip Details</h5>
+                  <form id="bookingForm">
+                    <div class="row">
+                      <!-- Start Date -->
+                      <div class="col-md-6 mb-3">
+                        <label for="startDate" class="form-label">Start Date</label>
+                        <input type="date" class="form-control" id="startDate" required>
+                      </div>
+                      <!-- End Date -->
+                      <div class="col-md-6 mb-3">
+                        <label for="endDate" class="form-label">End Date</label>
+                        <input type="date" class="form-control" id="endDate" required>
+                      </div>
+                    </div>
+                    <div class="mb-3">
+                      <label for="numTravelers" class="form-label">Number of Travelers</label>
+                      <input type="number" class="form-control" id="numTravelers" min="1" value="1" required>
+                    </div>
+                    
+                    <!-- Fellow Travelers Section -->
+                    <div class="card mb-4">
+                      <div class="card-body">
+                        <h5 class="card-title">Fellow Travelers</h5>
+                        <table id="fellowTravelersTable" class="table">
+                          <thead>
+                            <tr>
+                              <th>Full Name</th>
+                              <th>Age</th>
+                              <th>Gender</th>
+                              <th>Relation</th>
+                              <th>Contact</th>
+                              <th>Action</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <!-- Rows will be added dynamically -->
+                          </tbody>
+                        </table>
+                        <button type="button" id="addTravelerBtn" class="btn btn-sm btn-secondary mt-2">
+                          <i class="fas fa-plus"></i> Add Traveler
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                      <label for="notes" class="form-label">Special Requests</label>
+                      <textarea class="form-control" id="notes" rows="3" placeholder="Add any special requests or notes"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Submit Booking Request</button>
+                  </form>
+                 <!-- Simple Success Popup -->
+<!-- Simple Success Popup -->
+<div id="simple-success-popup" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+  <div class="bg-white rounded-lg p-6 w-full max-w-sm">
+      <div class="text-center">
+          <div class="text-green-500 text-5xl mb-3">
+              <i class="fas fa-check-circle"></i>
+          </div>
+          <h3 class="text-xl font-bold mb-2">Booking Successful!</h3>
+          <p class="text-gray-600 mb-4">Your booking request has been submitted.</p>
+          <button id="close-success-popup-btn" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+              Close
+          </button>
+      </div>
+  </div>
+</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+    <script>
+      // Initialize variables
+      let wishlist = [];
+      let currentSelectedGuide = null;
+    
+      // Clear all form fields on page load
+      window.onload = function() {
+        resetForm();
+        verifyTravelerAccess();
+      };
+    
+      function resetForm() {
+        document.getElementById("districtSelectionForm").reset();
+        document.getElementById("guideSelectionForm").reset();
+        document.getElementById("bookingForm").reset();
+        document.getElementById("guideDetails").classList.add("hidden");
+        document.getElementById("guide").disabled = true;
+        currentSelectedGuide = null;
+        // Clear fellow travelers table
+        document.querySelector('#fellowTravelersTable tbody').innerHTML = '';
+      }
+    
+      // Verify traveler access
+      async function verifyTravelerAccess() {
+        const loggedInUser = "{{ frappe.session.user }}";
+        if (!loggedInUser || loggedInUser === "Guest") {
+          showToast("Please login as a traveler to book guides", "error");
+          return false;
+        }
+        return true;
+      }
+    
+      // Enhanced toast message function
+      function showToast(message, type = "success", duration = 5000) {
+        // Remove existing toasts to prevent stacking
+        document.querySelectorAll('.toast').forEach(el => el.remove());
+        
+        const toast = document.createElement("div");
+        toast.className = `toast ${type === "error" ? "error" : ""}`;
+        toast.innerHTML = `
+          <div class="toast-icon">
+            ${type === "error" ? '<i class="fas fa-exclamation-circle"></i>' : '<i class="fas fa-check-circle"></i>'}
+          </div>
+          <div class="toast-message">${message}</div>
+        `;
+        document.body.appendChild(toast);
+        
+        // Auto-remove after duration
+        setTimeout(() => {
+          toast.classList.add("fade-out");
+          setTimeout(() => toast.remove(), 300);
+        }, duration);
+        
+        // Click to dismiss
+        toast.addEventListener("click", () => {
+          toast.classList.add("fade-out");
+          setTimeout(() => toast.remove(), 300);
+        });
+      }
+    
+      // Fetch Guides by District for Booking - Modified to preserve selection
+      async function fetchGuidesByDistrictBooking(district, startDate, endDate) {
+        try {
+          // Store current selection before refreshing
+          const guideDropdown = document.getElementById("guide");
+          const currentValue = guideDropdown.value;
+          
+          const response = await $.ajax({
+            method: "GET",
+            url: "/api/method/travomate.custom_app.get_guides_by_district_booking",
+            headers: {
+              "X-Frappe-CSRF-Token": $('meta[name="csrf-token"]').attr("content"),
+            },
+            data: {
+              district: district,
+              start_date: startDate,
+              end_date: endDate,
+            },
+          });
+          
+          if (response.message.status === "success") {
+            const guides = response.message.guides;
+            guideDropdown.innerHTML = '<option value="">Select a Guide</option>';
+            
+            if (guides.length === 0) {
+              showToast("No available guides found for this district", "info");
+            }
+            
+            guides.forEach(guide => {
+              const option = document.createElement("option");
+              option.value = guide.guide_id;
+              option.text = guide.guide_name;
+              if (guide.available === false) {
+                option.disabled = true;
+                option.text += " (Booked)";
+              }
+              option.dataset.district = district;
+              option.dataset.area = guide.area || '';
+              guideDropdown.appendChild(option);
+            });
+            
+            // Restore previous selection if it still exists
+            if (currentValue && [...guideDropdown.options].some(opt => opt.value === currentValue)) {
+              guideDropdown.value = currentValue;
+              // Trigger change event to reload details if guide is still selected
+              if (currentValue === currentSelectedGuide) {
+                guideDropdown.dispatchEvent(new Event('change'));
+              }
+            }
+            
+            guideDropdown.disabled = false;
+          } else {
+            showToast(response.message.message || "No guides found for the selected district.", "error");
+          }
+        } catch (error) {
+          console.error("Error fetching guides by district:", error);
+          showToast("Error fetching guides. Please try again.", "error");
+        }
+      }
+    
+      // Fetch Guide Details
+      async function fetchGuideDetails(guideId, district) {
+        try {
+            currentSelectedGuide = guideId; // Store the currently selected guide
+            
+            const response = await $.ajax({
+                method: "GET",
+                url: "/api/method/travomate.custom_app.get_guide_details",
+                headers: {
+                    "X-Frappe-CSRF-Token": $('meta[name="csrf-token"]').attr("content"),
+                },
+                data: { guide: guideId },
+            });
+            
+            if (response.message.status === "success") {
+                const guide = response.message.data;
+                const filteredAreas = guide.travel_zones
+                  ? guide.travel_zones
+                      .filter(tz => tz.district === district)
+                      .flatMap(tz => {
+                          // Find the daily rate for this district
+                          const dailyRate = tz.daily_rate ? `₹${tz.daily_rate}/day` : "Not specified";
+                          return {
+                              area: tz.areas.map(a => a.area),
+                              daily_rate: dailyRate
+                          };
+                      })
+                  : [];
+
+                // Update guide details display
+                document.getElementById("guideName").textContent = guide.full_name;
+                document.getElementById("guideRating").textContent = guide.rating || "Not rated";
+                document.getElementById("guideLanguages").textContent = guide.language_spoken || "Not specified";
+                document.getElementById("guideTravelZones").textContent = guide.travel_zones.map(tz => tz.district).join(", ") || "Not specified";
+                document.getElementById("guideAreas").textContent = filteredAreas.flatMap(a => a.area).join(", ") || "Not specified";
+                document.getElementById("guideExperience").textContent = guide.experience ? `${guide.experience} years` : "Not specified";
+                
+                // Display daily rate (use the first one found for this district)
+                const dailyRate = filteredAreas.length > 0 ? filteredAreas[0].daily_rate : "Not specified";
+                document.getElementById("guidePricing").textContent = dailyRate;
+                
+                document.getElementById("guideDetails").classList.remove("hidden");
+                
+                // Update the selected guide option with area data
+                const guideDropdown = document.getElementById("guide");
+                const selectedOption = guideDropdown.options[guideDropdown.selectedIndex];
+                if (selectedOption) {
+                    selectedOption.dataset.area = filteredAreas.length > 0 ? filteredAreas[0].area[0] : '';
+                    selectedOption.dataset.daily_rate = filteredAreas.length > 0 ? filteredAreas[0].daily_rate : '';
+                }
+            }
+        } catch (error) {
+            console.error("Error fetching guide details:", error);
+            showToast("Error loading guide details. Please try again.", "error");
+        }
+      }
+      
+      async function getTravelerForUser(user) {
+          try {
+              // Basic validation
+              if (!user || user === "Guest") {
+                  showToast("Please log in as a traveler to book guides", "error");
+                  setTimeout(() => window.location.href = "/login", 2000);
+                  throw new Error("Unauthenticated user");
+              }
+
+              const response = await $.ajax({
+                  method: "GET",
+                  url: "/api/method/travomate.custom_app.get_traveler_for_user",
+                  headers: {
+                      "X-Frappe-CSRF-Token": $('meta[name="csrf-token"]').attr("content"),
+                  },
+                  data: { user: user }
+              });
+
+              // Handle API response
+              if (response.message.status === "success") {
+                  return response.message.traveler; // Return traveler ID
+              } else {
+                  // Traveler exists but profile might be incomplete
+                  showToast("Please complete your traveler profile first", "error");
+                  setTimeout(() => window.location.href = "/profile", 2000);
+                  throw new Error(response.message.message || "Traveler profile issue");
+              }
+          } catch (error) {
+              console.error("Traveler verification failed:", error);
+              throw error; // Re-throw to stop booking process
+          }
+      }
+    
+      // Add to Wishlist
+      document.getElementById("addToWishlistBtn").addEventListener("click", () => {
+        const guideId = document.getElementById("guide").value;
+        if (!guideId) {
+          showToast("Please select a guide first", "error");
+          return;
+        }
+        
+        if (!wishlist.includes(guideId)) {
+          wishlist.push(guideId);
+          document.getElementById("addToWishlistBtn").classList.add("added");
+          showToast("Guide added to wishlist!");
+        } else {
+          showToast("Guide is already in your wishlist", "info");
+        }
+      });
+      
+      // View Wishlist
+      document.getElementById("wishlistButton").addEventListener("click", () => {
+        if (wishlist.length > 0) {
+          showToast(`Your wishlist has ${wishlist.length} guides`);
+        } else {
+          showToast("Your wishlist is empty", "info");
+        }
+      });
+      
+      // Fellow Travelers Table Management
+      document.getElementById('addTravelerBtn').addEventListener('click', function() {
+          const tableBody = document.querySelector('#fellowTravelersTable tbody');
+          const newRow = document.createElement('tr');
+          newRow.innerHTML = `
+              <td><input type="text" class="form-control" name="fellow_full_name" required></td>
+              <td><input type="number" class="form-control" name="fellow_age" min="1" required></td>
+              <td>
+                  <select class="form-select" name="fellow_gender" required>
+                      <option value="">Select</option>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Other">Other</option>
+                  </select>
+              </td>
+              <td>
+                  <select class="form-select" name="fellow_relation" required>
+                      <option value="">Select</option>
+                      <option value="Friend">Friend</option>
+                      <option value="Family">Family</option>
+                      <option value="Colleague">Colleague</option>
+                      <option value="Other">Other</option>
+                  </select>
+              </td>
+              <td><input type="tel" class="form-control" name="fellow_contact"></td>
+              <td><button type="button" class="btn btn-sm btn-danger remove-traveler"><i class="fas fa-times"></i></button></td>
+          `;
+          tableBody.appendChild(newRow);
+      });
+
+      // Remove row handler
+      document.addEventListener('click', function(e) {
+          if (e.target.classList.contains('remove-traveler')) {
+              e.target.closest('tr').remove();
+          }
+      });
+
+      // Function to collect fellow travelers data
+      function getFellowTravelersData() {
+          const travelers = [];
+          document.querySelectorAll('#fellowTravelersTable tbody tr').forEach(row => {
+              travelers.push({
+                  full_name: row.querySelector('[name="fellow_full_name"]').value,
+                  age: row.querySelector('[name="fellow_age"]').value,
+                  gender: row.querySelector('[name="fellow_gender"]').value,
+                  relation: row.querySelector('[name="fellow_relation"]').value,
+                  contact_number: row.querySelector('[name="fellow_contact"]').value
+              });
+          });
+          return travelers;
+      }
+      
+   // Handle Booking Form Submission
+// Handle Booking Form Submission
+document.getElementById("bookingForm").addEventListener("submit", async function(e) {
+    e.preventDefault();
+    
+    // Show loading state
+    const submitBtn = document.querySelector("#bookingForm button[type='submit']");
+    const originalBtnText = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+    
+    try {
+        // Validate form first
+        if (!validateBookingForm()) {
+            throw new Error("Please fix the form errors");
+        }
+
+        // Get form values
+        const guideId = document.getElementById("guide").value;
+        const startDate = document.getElementById("startDate").value;
+        const endDate = document.getElementById("endDate").value;
+        const numTravelers = parseInt(document.getElementById("numTravelers").value);
+        const notes = document.getElementById("notes").value;
+        const fellowTravelers = getFellowTravelersData();
+        
+        // Get district and area from selected guide
+        const guideDropdown = document.getElementById("guide");
+        const selectedOption = guideDropdown.options[guideDropdown.selectedIndex];
+        const district = selectedOption?.dataset.district;
+        const area = selectedOption?.dataset.area;
+
+        // Get traveler ID
+        const loggedInUser = "{{ frappe.session.user }}";
+        const travelerResponse = await $.ajax({
+            method: "GET",
+            url: "/api/method/travomate.custom_app.get_traveler_for_user",
+            headers: {
+                "X-Frappe-CSRF-Token": $('meta[name="csrf-token"]').attr("content"),
+            },
+            data: { user: loggedInUser }
+        });
+
+        if (!travelerResponse.message || travelerResponse.message.status !== "success") {
+            throw new Error("Unable to verify traveler account. Please complete your traveler profile.");
+        }
+
+        // Prepare booking data
+        const bookingData = {
+            traveler: travelerResponse.message.traveler,
+            guide: guideId,
+            start_date: startDate,
+            end_date: endDate,
+            num_travelers: numTravelers,
+            notes: notes || "",
+            district: district,
+            area: area,
+            fellow_travelers: JSON.stringify(fellowTravelers)
+        };
+
+        // Submit booking request
+        const response = await $.ajax({
+            method: "POST",
+            url: "/api/method/travomate.custom_app.create_booking",
+            headers: {
+                "X-Frappe-CSRF-Token": $('meta[name="csrf-token"]').attr("content"),
+                "Content-Type": "application/json"
+            },
+            data: JSON.stringify(bookingData)
+        }).catch(error => {
+            // Handle AJAX errors specifically
+            const errorMessage = error.responseJSON?.message?.message || 
+                               error.responseJSON?.message || 
+                               error.statusText || 
+                               "Booking request failed. Please try again.";
+            throw new Error(errorMessage);
+        });
+
+        if (response.message && response.message.status === "success") {
+            // Show simple success popup
+            showSimpleSuccessPopup();
+            // Reset form
+            resetForm();
+        } else {
+            const errorMsg = response.message?.message || "Booking request failed";
+            throw new Error(errorMsg);
+        }
+
+    } catch (error) {
+        console.error("Booking error:", error);
+        
+        // Handle different error types
+        let errorMessage = "Booking request failed. Please try again.";
+        if (error instanceof Error) {
+            errorMessage = error.message;
+        } else if (typeof error === 'string') {
+            errorMessage = error;
+        } else if (error?.message) {
+            errorMessage = error.message;
+        }
+        
+        showToast(errorMessage, "error");
+        
+        // If it's a validation error, scroll to the first error
+        if (error.message && error.message.includes("form errors")) {
+            const firstError = document.querySelector('.is-invalid');
+            if (firstError) {
+                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnText;
+    }
+});
+
+// Function to show simple success popup
+function showSimpleSuccessPopup() {
+    // Remove any existing popup first
+    const existingPopup = document.getElementById('simple-success-popup');
+    if (existingPopup) {
+        existingPopup.remove();
+    }
+
+    // Create new popup
+    const popupHTML = `
+    <div id="simple-success-popup" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 w-full max-w-sm">
+            <div class="text-center">
+                <div class="text-green-500 text-5xl mb-3">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h3 class="text-xl font-bold mb-2">Booking Successful!</h3>
+                <p class="text-gray-600 mb-4">Your booking request has been submitted.</p>
+                <button id="close-success-popup-btn" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                    Go to Dashboard
+                </button>
+            </div>
+        </div>
+    </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', popupHTML);
+    
+    // Add event listener for close button
+    document.getElementById('close-success-popup-btn').addEventListener('click', function() {
+        // Ensure navigation happens
+        window.location.href = "/traveler_dash";
+        return false;
+    });
+    
+    // Show the popup
+    document.getElementById('simple-success-popup').classList.remove('hidden');
+}
+      // Enhanced form validation function
+      function validateBookingForm() {
+          let isValid = true;
+          
+          // Clear previous errors
+          document.querySelectorAll('.is-invalid').forEach(el => {
+              el.classList.remove('is-invalid');
+              const feedback = el.nextElementSibling;
+              if (feedback && feedback.classList.contains('invalid-feedback')) {
+                  feedback.remove();
+              }
+          });
+
+          // Validate guide selection
+          const guideId = document.getElementById("guide").value;
+          const guideDropdown = document.getElementById("guide");
+          const selectedOption = guideDropdown.options[guideDropdown.selectedIndex];
+          const district = selectedOption?.dataset.district;
+          const area = selectedOption?.dataset.area;
+          
+          if (!guideId || !district || !area) {
+              markFieldInvalid(document.getElementById("guide"), "Please select a guide");
+              isValid = false;
+          }
+
+          // Validate dates
+          const startDate = document.getElementById("startDate").value;
+          const endDate = document.getElementById("endDate").value;
+          
+          if (!startDate) {
+              markFieldInvalid(document.getElementById("startDate"), "Please select a start date");
+              isValid = false;
+          }
+
+          if (!endDate) {
+              markFieldInvalid(document.getElementById("endDate"), "Please select an end date");
+              isValid = false;
+          }
+
+          if (startDate && endDate) {
+              const start = new Date(startDate);
+              const end = new Date(endDate);
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              
+              if (start < today) {
+                  markFieldInvalid(document.getElementById("startDate"), "Start date cannot be in the past");
+                  isValid = false;
+              }
+              
+              if (start > end) {
+                  markFieldInvalid(document.getElementById("startDate"), "Start date cannot be after end date");
+                  markFieldInvalid(document.getElementById("endDate"), "End date cannot be before start date");
+                  isValid = false;
+              }
+          }
+
+          // Validate number of travelers
+          const numTravelers = parseInt(document.getElementById("numTravelers").value);
+          if (isNaN(numTravelers) || numTravelers < 1) {
+              markFieldInvalid(document.getElementById("numTravelers"), "Please enter a valid number of travelers");
+              isValid = false;
+          }
+
+          // Validate fellow travelers
+          const fellowTravelers = getFellowTravelersData();
+          if (fellowTravelers.length === 0) {
+              markFieldInvalid(document.getElementById("addTravelerBtn"), "Please add at least one fellow traveler");
+              isValid = false;
+          } else {
+              // Validate each fellow traveler
+              document.querySelectorAll('#fellowTravelersTable tbody tr').forEach((row, index) => {
+                  const fullName = row.querySelector('[name="fellow_full_name"]').value.trim();
+                  const age = row.querySelector('[name="fellow_age"]').value;
+                  const gender = row.querySelector('[name="fellow_gender"]').value;
+                  
+                  if (!fullName) {
+                      markFieldInvalid(row.querySelector('[name="fellow_full_name"]'), "Full name is required");
+                      isValid = false;
+                  }
+                  
+                  if (!age || isNaN(age) || age < 1) {
+                      markFieldInvalid(row.querySelector('[name="fellow_age"]'), "Please enter a valid age");
+                      isValid = false;
+                  }
+                  
+                  if (!gender) {
+                      markFieldInvalid(row.querySelector('[name="fellow_gender"]'), "Please select gender");
+                      isValid = false;
+                  }
+              });
+          }
+
+          // Validate traveler count matches fellow travelers
+          if (numTravelers !== fellowTravelers.length) {
+              markFieldInvalid(document.getElementById("numTravelers"), 
+                  `Number of travelers (${numTravelers}) should match ${fellowTravelers.length} fellow travelers added`);
+              isValid = false;
+          }
+
+          return isValid;
+      }
+
+      // Helper function to mark fields invalid
+      function markFieldInvalid(element, message) {
+          element.classList.add('is-invalid');
+          const feedback = document.createElement('div');
+          feedback.className = 'invalid-feedback';
+          feedback.textContent = message;
+          element.parentNode.appendChild(feedback);
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+
+      // Helper function to get date value
+      function getDateValue(dateString) {
+          return new Date(dateString).getTime();
+      }
+
+      // Add real-time validation for number of travelers
+      document.getElementById("numTravelers").addEventListener("input", function() {
+          const numTravelers = parseInt(this.value) || 0;
+          const fellowTravelersCount = document.querySelectorAll('#fellowTravelersTable tbody tr').length;
+          
+          if (numTravelers !== fellowTravelersCount) {
+              markFieldInvalid(this, `Number should match fellow travelers count (${fellowTravelersCount})`);
+          } else {
+              this.classList.remove('is-invalid');
+              const feedback = this.nextElementSibling;
+              if (feedback && feedback.classList.contains('invalid-feedback')) {
+                  feedback.remove();
+              }
+          }
+      });      
+      
+      // Handle District Selection
+      document.getElementById("district").addEventListener("change", function() {
+          const district = this.value;
+          const startDate = document.getElementById("startDate").value;
+          const endDate = document.getElementById("endDate").value;
+          
+          if (district) {
+            fetchGuidesByDistrictBooking(district, startDate, endDate);
+          } else {
+            resetForm();
+          }
+      });
+      
+      // Handle Guide Selection
+      document.getElementById("guide").addEventListener("change", function() {
+          const guideId = this.value;
+          const district = document.getElementById("district").value;
+          
+          if (guideId && district) {
+            fetchGuideDetails(guideId, district);
+          } else {
+            document.getElementById("guideDetails").classList.add("hidden");
+          }
+      });
+    
+      // Handle date changes to refresh guide availability while preserving selection
+      document.getElementById("startDate").addEventListener("change", function() {
+          const district = document.getElementById("district").value;
+          if (district) {
+            fetchGuidesByDistrictBooking(
+              district, 
+              this.value, 
+              document.getElementById("endDate").value
+            );
+          }
+      });
+    
+      document.getElementById("endDate").addEventListener("change", function() {
+          const district = document.getElementById("district").value;
+          if (district) {
+            fetchGuidesByDistrictBooking(
+              district, 
+              document.getElementById("startDate").value,
+              this.value
+            );
+          }
+      });
+    </script>
+  </body>
+</html>

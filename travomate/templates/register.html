@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -56,12 +56,34 @@
       font-size: 0.875rem;
       margin-top: 0.5rem;
     }
+    .login-link {
+      margin-top: 1rem;
+      text-align: center;
+    }
+    .login-link a {
+      color: #007BFF;
+      text-decoration: none;
+    }
+    .login-link a:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
   <div class="signup-container">
     <h2>Sign Up</h2>
     <form id="signup-form">
+      <div class="form-group">
+        <label for="role">Select Role</label>
+        <select id="role" name="role" required>
+          <option value="Traveler">Traveler</option>
+          <option value="Guide">Guide</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="full_name">Full Name</label>
+        <input type="text" id="full_name" name="full_name" required>
+      </div>
       <div class="form-group">
         <label for="email">Email</label>
         <input type="email" id="email" name="email" required>
@@ -75,32 +97,29 @@
         <input type="password" id="confirm-password" name="confirm-password" required>
       </div>
       <div class="form-group">
-        <label for="role">Select Role</label>
-        <select id="role" name="role" required>
-          <option value="Traveler">Traveler</option>
-          <option value="Guide">Guide</option>
-        </select>
-      </div>
-      <div class="form-group">
         <button type="submit">Sign Up</button>
       </div>
       <div id="error-message" class="error-message"></div>
     </form>
+    <div class="login-link">
+      <p>Already have an account? <a href="/login">Log in</a></p>
+    </div>
   </div>
 
   <script>
     document.getElementById('signup-form').addEventListener('submit', async (e) => {
     e.preventDefault();
 
+    const fullName = document.getElementById('full_name').value.trim();
     const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
     const confirmPassword = document.getElementById('confirm-password').value;
-    const role = document.getElementById('role').value; // Get the selected role
+    const role = document.getElementById('role').value;
     const errorMessage = document.getElementById('error-message');
     errorMessage.textContent = '';
 
     // Frontend Validation
-    if (!email || !password || !confirmPassword || !role) {
+    if (!fullName || !email || !password || !confirmPassword || !role) {
         errorMessage.textContent = "Please fill all required fields.";
         return;
     }
@@ -118,32 +137,204 @@
     }
 
     try {
-      const response = await fetch('/api/method/travomate.custom_app.sign_up', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password, role_profile: role }),
+        // Log the data being sent to the backend
+        console.log("Sending data:", { full_name: fullName, email, password, role_profile: role });
 
-});
+        const response = await fetch('/api/method/travomate.custom_app.sign_up', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Expect': '', // Explicitly remove the Expect header
+            },
+            body: JSON.stringify({ full_name: fullName, email, password, role_profile: role }),
+        });
+
+        // Log the response for debugging
+        console.log("Response status:", response.status);
 
         if (!response.ok) {
-            throw new Error(`Server Error: ${response.status}`);
+            // Handle non-200 responses
+            const errorData = await response.json();
+            console.error("Server Error Data:", errorData);
+
+            // Display a user-friendly error message
+            if (response.status === 417 && errorData.exception.includes("User with this email already exists")) {
+                errorMessage.textContent = "This email is already registered. Please use a different email or log in.";
+            } else {
+                errorMessage.textContent = errorData.message || `Server Error: ${response.status}`;
+            }
+            return;
         }
 
         const result = await response.json();
-        console.log("API Response:", result); // Debugging: Log API response
+        console.log("API Response:", result);
 
-        if (result.status === 'success') {
-            window.location.href = '/login'; // Redirect to login page after successful signup
+        // Handle the response
+        if (result.message.status === "success") {
+            frappe.msgprint(result.message.message);
+            window.location.href = result.message.redirect_url;
         } else {
-            errorMessage.textContent = result.message || 'Signup failed. Please try again.';
+            frappe.throw(result.message.message);
         }
     } catch (error) {
-        console.error("Error:", error); // Debugging: Log errors
+        console.error("Error:", error);
         errorMessage.textContent = error.message || 'An error occurred. Please try again.';
     }
 });
   </script>
 </body>
+</html>
+
+ -->
+
+<!DOCTYPE html>
+<html lang="en-US" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Travomate | Sign Up</title>
+    <link rel="stylesheet" href="assets/css/theme.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&amp;family=Volkhov:wght@700&amp;display=swap" rel="stylesheet">
+  </head>
+
+  <body>
+    <main class="main" id="top">
+      <!-- Navigation Bar -->
+      <nav class="navbar navbar-expand-lg navbar-light fixed-top py-5 d-block" data-navbar-on-scroll="data-navbar-on-scroll">
+        <div class="container">
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse border-top border-lg-0 mt-4 mt-lg-0" id="navbarSupportedContent">
+            <ul class="navbar-nav ms-auto pt-2 pt-lg-0 font-base align-items-lg-center align-items-start">
+              <li class="nav-item px-3 px-xl-4"><a class="nav-link fw-medium" href="/guide_dash">Dashboard</a></li>
+            </ul>
+          </div>
+        </div>
+      </nav>
+
+      <!-- Registration Form Section -->
+      <section class="pt-8">
+        <div class="container">
+          <h3 class="text-center fw-bold mb-5">Sign Up</h3>
+          <div class="row justify-content-center">
+            <div class="col-lg-8">
+              <form id="signup-form" class="needs-validation" novalidate>
+                <!-- Role Selection -->
+                <div class="mb-3">
+                  <label for="role" class="form-label">Select Role</label>
+                  <select class="form-select" id="role" name="role" required>
+                    <option value="Traveler">Traveler</option>
+                    <option value="Guide">Guide</option>
+                  </select>
+                </div>
+
+                <!-- Full Name -->
+                <div class="mb-3">
+                  <label for="full_name" class="form-label">Full Name</label>
+                  <input type="text" class="form-control" id="full_name" name="full_name" required>
+                </div>
+
+                <!-- Email -->
+                <div class="mb-3">
+                  <label for="email" class="form-label">Email</label>
+                  <input type="email" class="form-control" id="email" name="email" required>
+                </div>
+
+                <!-- Password -->
+                <div class="mb-3">
+                  <label for="password" class="form-label">Password</label>
+                  <input type="password" class="form-control" id="password" name="password" required>
+                </div>
+
+                <!-- Confirm Password -->
+                <div class="mb-3">
+                  <label for="confirm-password" class="form-label">Confirm Password</label>
+                  <input type="password" class="form-control" id="confirm-password" name="confirm-password" required>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="d-grid">
+                  <button type="submit" class="btn btn-primary">Sign Up</button>
+                </div>
+
+                <!-- Error Message -->
+                <div id="error-message" class="text-danger mt-3"></div>
+              </form>
+
+              <!-- Login Link -->
+              <div class="text-center mt-4">
+                <p>Already have an account? <a href="/login">Log in</a></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- JavaScript for Handling Form Submissions -->
+    <script>
+      document.getElementById('signup-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const fullName = document.getElementById('full_name').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('confirm-password').value;
+        const role = document.getElementById('role').value;
+        const errorMessage = document.getElementById('error-message');
+        errorMessage.textContent = '';
+
+        // Frontend Validation
+        if (!fullName || !email || !password || !confirmPassword || !role) {
+          errorMessage.textContent = "Please fill all required fields.";
+          return;
+        }
+        if (!/^[\w.-]+@[a-zA-Z\d.-]+\.[a-zA-Z]{2,}$/.test(email)) {
+          errorMessage.textContent = "Invalid email format!";
+          return;
+        }
+        if (password.length < 6) {
+          errorMessage.textContent = "Password must be at least 6 characters!";
+          return;
+        }
+        if (password !== confirmPassword) {
+          errorMessage.textContent = "Passwords do not match!";
+          return;
+        }
+
+        try {
+          const response = await fetch('/api/method/travomate.custom_app.sign_up', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Expect': '',
+            },
+            body: JSON.stringify({ full_name: fullName, email, password, role_profile: role }),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            if (response.status === 417 && errorData.exception.includes("User with this email already exists")) {
+              errorMessage.textContent = "This email is already registered. Please use a different email or log in.";
+            } else {
+              errorMessage.textContent = errorData.message || `Server Error: ${response.status}`;
+            }
+            return;
+          }
+
+          const result = await response.json();
+          if (result.message.status === "success") {
+            window.location.href = result.message.redirect_url;
+          } else {
+            errorMessage.textContent = result.message.message;
+          }
+        } catch (error) {
+          console.error("Error:", error);
+          errorMessage.textContent = error.message || 'An error occurred. Please try again.';
+        }
+      });
+    </script>
+  </body>
 </html>
