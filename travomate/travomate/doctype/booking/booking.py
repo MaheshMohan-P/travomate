@@ -9,11 +9,12 @@ class Booking(Document):
         self.calculate_trip_details()
     
     def validate_dates(self):
-        if getdate(self.start_date) < getdate(nowdate()):
-            frappe.throw(_("Start date cannot be in the past"))
+        # if getdate(self.start_date) < getdate(nowdate()):
+        #     frappe.throw(_("Start date cannot be in the past"))
         
-        if getdate(self.start_date) > getdate(self.end_date):
-            frappe.throw(_("End date cannot be before start date"))
+        # if getdate(self.start_date) > getdate(self.end_date):
+        #     frappe.throw(_("End date cannot be before start date"))
+        pass
     
     def calculate_trip_details(self):
         """Calculate duration and total amount based on travel zone"""
@@ -31,37 +32,117 @@ class Booking(Document):
 
 @frappe.whitelist()
 def mark_completed_trips():
-    """Automatically mark past trips as completed"""
+    """Automatically mark past trips as completed and handle notifications"""
     try:
         today = getdate(nowdate())
+        # Get confirmed bookings that ended before today
         past_bookings = frappe.get_all("Booking",
             filters={
                 "status": "Confirmed",
                 "end_date": ["<", today]
             },
-            fields=["name", "end_date"]
+            fields=["name", "traveler", "guide", "end_date", "start_date", "travel_zone"]
         )
 
+        results = {
+            "updated": 0,
+            "notified_travelers": 0,
+            "notified_guides": 0
+        }
+
         for booking in past_bookings:
-            # Mark as completed
+            # Skip if already processed (safety check)
+            if frappe.db.get_value("Booking", booking.name, "status") != "Confirmed":
+                continue
+
+            # Calculate review eligibility (7-day window)
+            days_since_trip = (today - getdate(booking.end_date)).days
+            is_reviewable = 1 if days_since_trip <= 7 else 0
+
+            # Update booking status
             frappe.db.set_value("Booking", booking.name, {
                 "status": "Completed",
-                "is_reviewable": 1 if (today - getdate(booking.end_date)).days <= 7 else 0
+                "is_reviewable": is_reviewable,
+                "modified": now_datetime()
             })
 
+            # Create review request notification for traveler
+            if is_reviewable:
+                create_review_notification(
+                    traveler=booking.traveler,
+                    guide=booking.guide,
+                    booking=booking.name,
+                    travel_zone=booking.travel_zone,
+                    trip_date=f"{booking.start_date} to {booking.end_date}"
+                )
+                results["notified_travelers"] += 1
+
+            # Create completion notification for guide
+            create_guide_notification(
+                guide=booking.guide,
+                booking=booking.name,
+                traveler=booking.traveler
+            )
+            results["notified_guides"] += 1
+
+            results["updated"] += 1
+
         frappe.db.commit()
+        
+        # Log results for monitoring
+        frappe.logger().info(f"Booking completion job: {results}")
         return {
             "status": "success",
-            "count": len(past_bookings),
-            "message": f"Marked {len(past_bookings)} bookings as completed"
+            **results,
+            "message": f"Processed {results['updated']} bookings"
         }
 
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "Failed to mark completed trips")
+        frappe.log_error(
+            title="Failed to mark completed trips",
+            message=frappe.get_traceback()
+        )
         return {
             "status": "error",
             "message": str(e)
         }
+
+def create_review_notification(traveler, guide, booking, travel_zone, trip_date):
+    """Create notification for traveler to review their trip"""
+    try:
+        frappe.get_doc({
+            "doctype": "Notification Log",
+            "subject": "How was your trip?",
+            "email_content": f"""
+                <p>We hope you enjoyed your trip to {travel_zone} from {trip_date}!</p>
+                <p>Please take a moment to review your guide.</p>
+                <p><a href="/booking/{booking}/review">Leave a Review</a></p>
+            """,
+            "for_user": traveler,
+            "type": "Alert",
+            "document_type": "Booking",
+            "document_name": booking
+        }).insert(ignore_permissions=True)
+    except Exception:
+        frappe.log_error("Failed to create review notification")
+
+def create_guide_notification(guide, booking, traveler):
+    """Create notification for guide about completed trip"""
+    try:
+        frappe.get_doc({
+            "doctype": "Notification Log",
+            "subject": "Trip completed",
+            "email_content": f"""
+                <p>Your booking #{booking} with {traveler} has been marked as completed.</p>
+                <p>You may receive a review from the traveler soon.</p>
+            """,
+            "for_user": guide,
+            "type": "Alert",
+            "document_type": "Booking",
+            "document_name": booking
+        }).insert(ignore_permissions=True)
+    except Exception:
+        frappe.log_error("Failed to create guide notification")
 
 @frappe.whitelist()
 def get_payment_url(booking_id):

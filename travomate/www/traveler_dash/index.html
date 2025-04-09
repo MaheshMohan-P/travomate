@@ -30,7 +30,6 @@
     .search-results div:hover {
       background: #f1f1f1;
     }
-    /* Add to your existing CSS */
     .bank-details {
         background: #f8f9fa;
         border: 1px solid #dee2e6;
@@ -38,16 +37,136 @@
         padding: 15px;
         margin-bottom: 15px;
     }
-
     .bank-details h6 {
         font-size: 16px;
         margin-bottom: 10px;
         color: #333;
     }
-
     .bank-details p {
         margin-bottom: 5px;
         font-size: 14px;
+    }
+    .review-card {
+      border-left: 4px solid var(--bs-primary);
+      transition: all 0.3s ease;
+    }
+    .review-card:hover {
+      background-color: rgba(13, 110, 253, 0.05);
+    }
+    .guide-reply {
+      border-left: 4px solid var(--bs-success);
+      background-color: rgba(25, 135, 84, 0.05);
+    }
+    .rating-stars {
+      color: #ffc107;
+      font-size: 1.2rem;
+    }
+    #areasList {
+      max-height: 600px;
+      overflow-y: auto;
+      padding-right: 10px;
+    }
+    .area-card {
+      transition: all 0.3s ease;
+      min-height: 200px;
+      margin-bottom: 1rem;
+    }
+
+    .area-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    .area-image-container {
+      height: 200px;
+      background: #f5f5f5;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .area-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .no-image {
+      color: #666;
+      font-size: 0.9rem;
+      text-align: center;
+      padding: 1rem;
+    }
+    .image-loading-spinner {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    #showMoreBtn {
+      transition: all 0.3s ease;
+      margin-top: 1rem;
+    }
+
+    #showMoreBtn:hover {
+      background-color: #f8f9fa;
+    }
+    .btn-show-more {
+      transition: all 0.3s ease;
+    }
+    .btn-show-more:hover {
+      background-color: #f8f9fa;
+    }
+    #areasList::-webkit-scrollbar {
+      width: 8px;
+    }
+    #areasList::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 10px;
+    }
+    #areasList::-webkit-scrollbar-thumb {
+      background: #888;
+      border-radius: 10px;
+    }
+    #areasList::-webkit-scrollbar-thumb:hover {
+      background: #555;
+    }
+    .area-image-carousel {
+      height: 200px;
+      background: #f5f5f5;
+    }
+    .area-image-carousel .carousel-item {
+      height: 200px;
+    }
+    .area-image-carousel img {
+      height: 100%;
+      width: 100%;
+      object-fit: cover;
+    }
+    .carousel-control-prev, .carousel-control-next {
+      background-color: rgba(0,0,0,0.2);
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+    .area-image-error::after {
+      content: "Image not available";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #666;
+    }
+    body:before {
+      content: '';
+      display: none;
+      background-image: url('/assets/travomate/img/placeholder.jpg');
+    }
+    @media (max-width: 768px) {
+      .area-image-container {
+        height: 150px;
+      }
     }
   </style>
 </head>
@@ -114,7 +233,10 @@
               <button type="button" class="btn btn-primary" onclick="searchPlaces()">Search Places</button>
             </form>
             <div id="areasSection" class="mt-4 hidden">
-              <h5>Areas in Selected District</h5>
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5>Areas in <span id="selectedDistrictName">Selected District</span></h5>
+                <small id="areasCount" class="text-muted">0 places found</small>
+              </div>
               <div id="areasList" class="list-unstyled"></div>
             </div>
           </div>
@@ -215,6 +337,68 @@
   </div>
 </section>
 
+<!-- Reviews Section -->
+<section class="pt-5 pt-md-9" id="reviews">
+  <div class="container">
+    <div class="mb-7 text-center">
+      <h5 class="text-secondary">Traveler Feedback</h5>
+      <h3 class="fs-xl-10 fs-lg-8 fs-7 fw-bold font-cursive text-capitalize">My Reviews</h3>
+    </div>
+    
+    <!-- Review Stats Summary -->
+    <div class="row mb-5">
+      <div class="col-md-4 mb-4">
+        <div class="card shadow-sm h-100">
+          <div class="card-body text-center py-4">
+            <h2 class="display-4 fw-bold text-primary" id="averageRating">4.0</h2>
+            <p class="mb-0">Average Rating</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4 mb-4">
+        <div class="card shadow-sm h-100">
+          <div class="card-body text-center py-4">
+            <h2 class="display-4 fw-bold text-primary" id="totalReviews">0</h2>
+            <p class="mb-0">Total Reviews</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4 mb-4">
+        <div class="card shadow-sm h-100">
+          <div class="card-body text-center py-4">
+            <h2 class="display-4 fw-bold text-primary" id="repliesReceived">1</h2>
+            <p class="mb-0">Replies Received</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Reviews List -->
+    <div class="row">
+      <div class="col-12">
+        <div class="card shadow-sm">
+          <div class="card-body p-0">
+            <div id="reviewsList" class="list-group list-group-flush">
+              <!-- Reviews will be loaded here -->
+              <div class="text-center py-5" id="reviewsLoading">
+                <div class="spinner-border text-primary" role="status">
+                  <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Loading your reviews...</p>
+              </div>
+              <div class="text-center py-5 hidden" id="noReviewsMessage">
+                <i class="fas fa-star fa-3x text-muted mb-3"></i>
+                <h5>No reviews yet</h5>
+                <p>Your completed trips will appear here for review</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
     <!-- Footer -->
     <footer class="py-5 text-center">
       <p class="mb-0 text-secondary fs--1 fw-medium">All rights reserved@travomate.co</p>
@@ -305,45 +489,151 @@ document.getElementById("districtGuide").addEventListener("input", function() {
   filterDistricts(this.value, resultsContainer);
 });
 
-// Search Places
 function searchPlaces() {
   const district = document.getElementById("district").value;
   if (district) {
+    // Show loading state
+    document.getElementById("areasList").innerHTML = `
+      <div class="text-center py-4">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2">Loading places...</p>
+      </div>
+    `;
+    document.getElementById("areasSection").classList.remove("hidden");
+
+    // Get all areas with their images
     $.ajax({
-      url: "/api/method/frappe.client.get_list",
+      url: "/api/method/travomate.custom_app.get_areas_with_images",
       type: "GET",
       headers: {
-        "X-Frappe-CSRF-Token": $('meta[name="csrf-token"]').attr("content"),
+        "X-Frappe-CSRF-Token": $('meta[name="csrf-token"]').attr("content")
       },
       data: {
-        doctype: "Area",
-        filters: JSON.stringify({ district: district }),
-        fields: JSON.stringify(["name", "area"]),
+        district: district
       },
       success: function(response) {
-        const areasList = document.getElementById("areasList");
-        areasList.innerHTML = "";
-        response.message.forEach(area => {
-          const card = document.createElement("div");
-          card.className = "card mb-3";
-          card.innerHTML = `
-            <div class="card-body">
-              <h5 class="card-title">${area.area}</h5>
-            </div>
-          `;
-          areasList.appendChild(card);
-        });
-        document.getElementById("areasSection").classList.remove("hidden");
+        try {
+          if (!response || !response.message) {
+            throw new Error("Invalid response from server");
+          }
+
+          const areasList = document.getElementById("areasList");
+          areasList.innerHTML = "";
+          
+          document.getElementById("selectedDistrictName").textContent = district;
+          const count = response.message.length;
+          document.getElementById("areasCount").textContent = 
+            `${count} ${count === 1 ? 'place' : 'places'} found`;
+
+          // Store all areas for show more functionality
+          window.allAreas = response.message;
+          
+          // Show initial set of areas
+          showAreas(0, 4);
+          
+          // Add "Show More" button if there are more areas
+          if (count > 4) {
+            const showMoreBtn = document.createElement("button");
+            showMoreBtn.className = "btn btn-outline-primary w-100 mt-2";
+            showMoreBtn.textContent = "Show More";
+            showMoreBtn.id = "showMoreBtn";
+            showMoreBtn.onclick = function() {
+              const visibleCount = document.querySelectorAll('.area-card:not(.hidden)').length;
+              showAreas(visibleCount, 4);
+              
+              // Remove button if no more cards to show
+              if (visibleCount + 4 >= count) {
+                showMoreBtn.remove();
+              }
+            };
+            areasList.appendChild(showMoreBtn);
+          }
+        } catch (e) {
+          console.error("Error processing response:", e);
+          showError("Error processing area data");
+        }
       },
       error: function(xhr, status, error) {
-        console.error("Error fetching areas:", error);
-        alert("Failed to load areas. Please check permissions.");
+        console.error("API Error:", xhr.responseJSON || error);
+        showError(xhr.responseJSON?.exc_type === "ValidationError" 
+          ? xhr.responseJSON._server_messages 
+          : "Failed to load areas. Please try again.");
       }
     });
   } else {
     alert("Please select a district.");
   }
 }
+
+function showAreas(startIndex, count) {
+  const areasList = document.getElementById("areasList");
+  const endIndex = Math.min(startIndex + count, window.allAreas.length);
+  
+  for (let i = startIndex; i < endIndex; i++) {
+    const area = window.allAreas[i];
+    const card = document.createElement("div");
+    card.className = "card mb-3 area-card";
+    
+    // Create image container
+    const imageContainer = document.createElement("div");
+    imageContainer.className = "area-image-container";
+    
+    // Check if images exist
+    let imageHtml = '<div class="no-image">No Image Available</div>';
+    if (area.images?.length > 0 && area.images[0].image) {
+      const imageUrl = area.images[0].image.startsWith('http') 
+        ? area.images[0].image 
+        : `/files/${area.images[0].image}`;
+      
+      imageHtml = `
+        <img src="${imageUrl}" 
+             class="area-image"
+             alt="${area.area}"
+             onerror="handleImageError(this)">
+      `;
+    }
+    
+    imageContainer.innerHTML = imageHtml;
+    
+    // Create card content
+    card.innerHTML = `
+      <div class="row g-0">
+        <div class="col-md-5">
+          ${imageContainer.outerHTML}
+        </div>
+        <div class="col-md-7">
+          <div class="card-body">
+            <h5 class="card-title">${area.area}</h5>
+            <p class="card-text"><small class="text-muted">${district} District</small></p>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    areasList.insertBefore(card, document.getElementById("showMoreBtn"));
+  }
+}
+
+function handleImageError(img) {
+  console.error("Image failed to load:", img.src);
+  img.style.display = 'none';
+  const container = img.parentElement;
+  const errorDiv = document.createElement('div');
+  errorDiv.className = 'no-image';
+  errorDiv.textContent = 'Image not available';
+  container.appendChild(errorDiv);
+}
+
+function showError(message) {
+  document.getElementById("areasList").innerHTML = `
+    <div class="alert alert-danger">
+      ${message}
+    </div>
+  `;
+}
+
 
 // Search Guides
 function searchGuides() {
@@ -964,7 +1254,7 @@ function showReviewModal(bookingId) {
 
     let selectedRating = 0;
     
-    // Add event delegation for star rating
+    // Star rating interaction (UNCHANGED)
     modal.on('mouseenter', '.fa-star', function() {
         const hoverRating = $(this).data('rating');
         $('#starRating .fa-star').each(function(i) {
@@ -984,7 +1274,7 @@ function showReviewModal(bookingId) {
         });
     });
 
-    // Handle submit button click
+    // Submit button (ONLY ADDED REVIEWS SECTION REFRESH)
     modal.find('#submitReviewBtn').click(function() {
         if (selectedRating === 0) {
             showErrorToast("Please select a rating by clicking the stars");
@@ -996,14 +1286,18 @@ function showReviewModal(bookingId) {
     $('body').append(modal);
     modal.modal('show');
     
-    // Remove modal on hide
     modal.on('hidden.bs.modal', function() {
         modal.remove();
     });
 }
 
-// Update submitReview function
 function submitReview(bookingId, rating, comment) {
+    console.log("Submitting review with:", { 
+        booking_id: bookingId, 
+        rating: rating, 
+        review_text: comment || "" 
+    });
+    
     $.ajax({
         url: "/api/method/travomate.custom_app.submit_review",
         type: "POST",
@@ -1013,30 +1307,159 @@ function submitReview(bookingId, rating, comment) {
         data: {
             booking_id: bookingId,
             rating: rating,
-            comment: comment || ""
+            review_text: comment || ""  // Changed from 'comment' to 'review_text'
         },
         success: function(response) {
+            console.log("Server response:", response);
             if (response.message && response.message.status === "success") {
                 showSuccessToast("Thank you for your review!");
                 fetchBookingDetails();
+                fetchAndDisplayReviews();
                 $('#reviewModal').modal('hide');
+                
+                $('html, body').animate({
+                    scrollTop: $('#reviews').offset().top - 20
+                }, 500);
             } else {
                 showErrorToast(response.message?.message || "Failed to submit review");
             }
         },
         error: function(error) {
+            console.error("AJAX error:", error);
             showErrorToast("Error submitting review. Please try again.");
-            console.error("Review submission error:", error);
         }
     });
 }
 
-// Initialize on page load
-$(document).ready(function() {
-    loadTravelerData();  // Load and display traveler's name
-    fetchBookingDetails();  // Load booking details
+function fetchAndDisplayReviews() {
+    const travelerEmail = "{{ frappe.session.user }}";
     
-    // Handle booking success redirect
+    // Show loading state
+    $('#reviewsLoading').show();
+    $('#noReviewsMessage').addClass('hidden');
+    $('#reviewsList').empty();
+    
+    $.ajax({
+        url: "/api/method/travomate.custom_app.get_traveler_reviews",
+        type: "GET",
+        headers: {
+            "X-Frappe-CSRF-Token": $('meta[name="csrf-token"]').attr("content")
+        },
+        data: {
+            traveler_email: travelerEmail
+        },
+        success: function(response) {
+            $('#reviewsLoading').hide();
+            
+            if (response.message && response.message.status === "success") {
+                const reviews = response.message.reviews || [];
+                const stats = response.message.stats || {};
+                
+                // Update stats
+                $('#averageRating').text(stats.average_rating || '0.0');
+                $('#totalReviews').text(stats.total_reviews || '0');
+                $('#repliesReceived').text(stats.replies_received || '0');
+                
+                if (reviews.length === 0) {
+                    $('#noReviewsMessage').removeClass('hidden');
+                } else {
+                    renderReviews(reviews);
+                }
+            } else {
+                showErrorToast(response.message?.message || "Failed to load reviews");
+                $('#noReviewsMessage').removeClass('hidden').find('p').text("Error loading reviews");
+            }
+        },
+        error: function(error) {
+            $('#reviewsLoading').hide();
+            $('#noReviewsMessage').removeClass('hidden').find('p').text("Error loading reviews");
+            console.error("Error fetching reviews:", error);
+        }
+    });
+}
+
+
+function renderReviews(reviews) {
+    const reviewsList = $('#reviewsList');
+    reviewsList.empty();
+    
+    reviews.forEach(review => {
+        const reviewDate = review.review_date ? new Date(review.review_date) : null;
+        const replyDate = review.reply_date ? new Date(review.reply_date) : null;
+        const tripDate = review.trip_date ? new Date(review.trip_date) : null;
+        
+        const reviewCard = $(`
+            <div class="list-group-item review-card p-4">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h5 class="mb-1">${review.guide_name}</h5>
+                        <small class="text-muted">${formatDate(reviewDate)}</small>
+                    </div>
+                    <div class="rating-stars">
+                        ${renderStars(review.rating)}
+                    </div>
+                </div>
+                <p class="mb-3">${review.review_text || 'No comments provided'}</p>
+                
+                ${tripDate ? `<p><small class="text-muted"><i class="fas fa-calendar-alt me-2"></i>Trip Date: ${formatDate(tripDate)}</small></p>` : ''}
+                
+                ${review.booking ? `<p><small class="text-muted"><i class="fas fa-hashtag me-2"></i>Booking Ref: ${review.booking}</small></p>` : ''}
+            </div>
+        `);
+        
+        // Add guide reply if exists
+        if (review.guide_reply) {
+            reviewCard.append(`
+                <div class="guide-reply p-3 mt-3 rounded">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h6 class="mb-0 text-success"><i class="fas fa-reply me-2"></i>Guide's Response</h6>
+                        <small class="text-muted">${formatDate(replyDate)}</small>
+                    </div>
+                    <p class="mb-0">${review.guide_reply}</p>
+                </div>
+            `);
+        }
+        
+        reviewsList.append(reviewCard);
+    });
+}
+
+function renderStars(rating) {
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+    let stars = '';
+    
+    for (let i = 1; i <= 5; i++) {
+        if (i <= fullStars) {
+            stars += '<i class="fas fa-star"></i>';
+        } else if (i === fullStars + 1 && hasHalfStar) {
+            stars += '<i class="fas fa-star-half-alt"></i>';
+        } else {
+            stars += '<i class="far fa-star"></i>';
+        }
+    }
+    
+    return stars;
+}
+
+function formatDate(date) {
+    if (!date) return 'N/A';
+    return date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+    });
+}
+
+
+// Update document ready to initialize reviews
+$(document).ready(function() {
+    loadTravelerData();
+    fetchBookingDetails();
+    
+    // New: Initialize reviews section
+    fetchAndDisplayReviews();
+    
     if (window.location.hash === '#booking-success') {
         showSuccessToast("Booking created successfully!");
         window.location.hash = '#trips';

@@ -262,7 +262,7 @@ api_methods = ["custom_app.api.update_traveler_profile",
 
 scheduler_events = {
     "cron": {
-        "0 0 * * *": [  # Runs daily at midnight (00:00)
+        "0 * * * *": [  # Runs at the start of every hour
             "travomate.travomate.doctype.booking.booking.mark_completed_trips"
         ]
     }

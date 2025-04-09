@@ -23,7 +23,9 @@
   "experience",
   "rating",
   "pricing",
-  "travel_zone"
+  "travel_zone",
+  "total_reviews",
+  "travel_zones"
  ],
  "fields": [
   {
@@ -122,11 +124,22 @@
    "fieldtype": "Link",
    "label": "Travel Zone",
    "options": "Travel Zone"
+  },
+  {
+   "fieldname": "total_reviews",
+   "fieldtype": "Int",
+   "label": "Total Reviews"
+  },
+  {
+   "fieldname": "travel_zones",
+   "fieldtype": "Table",
+   "label": "Travel Zones",
+   "options": "TZ Areas"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-03-19 11:52:27.516917",
+ "modified": "2025-04-08 23:38:13.617496",
  "modified_by": "Administrator",
  "module": "Travomate",
  "name": "Guide",

@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="en-US" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ frappe.session.csrf_token }}">
+  <title>Guide Report | Travomate</title>
+  <link href="assets/css/theme.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <style>
+    .summary-card {
+      transition: all 0.3s ease;
+      border-left: 4px solid;
+      height: 100%;
+    }
+    .summary-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    .summary-card.earnings { border-left-color: #4e73df; }
+    .summary-card.bookings { border-left-color: #1cc88a; }
+    .summary-card.rating { border-left-color: #f6c23e; }
+    .summary-card.payout { border-left-color: #e74a3b; }
+    .chart-container {
+      position: relative;
+      height: 300px;
+      margin-bottom: 30px;
+    }
+    .time-filter .btn {
+      border-radius: 0;
+    }
+    .time-filter .btn:first-child {
+      border-top-left-radius: 4px;
+      border-bottom-left-radius: 4px;
+    }
+    .time-filter .btn:last-child {
+      border-top-right-radius: 4px;
+      border-bottom-right-radius: 4px;
+    }
+    .zone-performance {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .table-responsive {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .rating-stars {
+      color: #ffc107;
+      font-size: 1.2rem;
+    }
+    .progress-thin {
+      height: 6px;
+    }
+    .hidden {
+      display: none;
+    }
+    #loadingSpinner {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 9999;
+      display: none;
+      justify-content: center;
+      align-items: center;
+    }
+    .spinner-border {
+      width: 3rem;
+      height: 3rem;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 2rem;
+      color: #6c757d;
+    }
+    .empty-state i {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <main class="main" id="top">
+    <!-- Loading Spinner -->
+    <div id="loadingSpinner">
+      <div class="spinner-border text-light" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light fixed-top py-5 d-block" data-navbar-on-scroll="data-navbar-on-scroll">
+      <div class="container">
+        <a class="navbar-brand" href="index.html"><img src="/assets/img/icon2.png" height="100" alt="logo" /></a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse border-top border-lg-0 mt-4 mt-lg-0" id="navbarSupportedContent">
+          <ul class="navbar-nav ms-auto pt-2 pt-lg-0 font-base align-items-lg-center align-items-start">
+            <!-- <li class="nav-item px-3 px-xl-4"><a class="nav-link fw-medium" href="/guide_profile">Profile</a></li>
+            <li class="nav-item px-3 px-xl-4"><a class="nav-link fw-medium" href="/travel_zone">Travel Zones</a></li>
+            <li class="nav-item px-3 px-xl-4"><a class="nav-link fw-medium" href="/booking_requests">Bookings</a></li>
+            <li class="nav-item px-3 px-xl-4"><a class="nav-link fw-medium active" href="/guide_report">Report</a></li> -->
+            <li class="nav-item px-3 px-xl-4"><a class="nav-link fw-medium" href="/guide_dash">Dashboard</a></li>
+            <li class="nav-item px-3 px-xl-4"><a class="btn btn-outline-dark order-1 order-lg-0 fw-medium" href="#" onclick="logout()">Logout</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section style="padding-top: 7rem;">
+      <div class="bg-holder" style="background-image:url(assets/img/hero/hero-bg.svg);"></div>
+      <div class="container">
+        <div class="row align-items-center">
+          <div class="col-md-7 col-lg-6 text-md-start text-center py-6">
+            <h4 class="fw-bold text-danger mb-3">Performance Report</h4>
+            <h1 class="hero-title">Your Earnings & Booking Analytics</h1>
+            <p class="mb-4 fw-medium">Track your performance, earnings, and traveler feedback in one place.</p>
+          </div>
+          <div class="col-md-5 col-lg-6 order-0 order-md-1 text-end">
+            <img class="pt-7 pt-md-0 hero-img" src="assets/img/hero/report-dashboard.png" alt="Report Dashboard" />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Report Dashboard Section -->
+    <section class="pt-5 pt-md-9" id="report">
+      <div class="container">
+        <!-- Time Filter -->
+        <div class="row mb-4">
+          <div class="col-12">
+            <div class="card shadow-sm mb-4">
+              <div class="card-body py-3">
+                <div class="d-flex justify-content-between align-items-center">
+                  <h5 class="mb-0">Time Period</h5>
+                  <div class="time-filter btn-group" role="group">
+                    <button type="button" class="btn btn-outline-primary active" data-period="week">This Week</button>
+                    <button type="button" class="btn btn-outline-primary" data-period="month">This Month</button>
+                    <button type="button" class="btn btn-outline-primary" data-period="quarter">Last 3 Months</button>
+                    <button type="button" class="btn btn-outline-primary" data-period="year">This Year</button>
+                    <button type="button" class="btn btn-outline-primary" data-period="custom">Custom Range</button>
+                  </div>
+                </div>
+                <div id="customRangePicker" class="row mt-3 hidden">
+                  <div class="col-md-5">
+                    <label for="startDate" class="form-label">Start Date</label>
+                    <input type="date" class="form-control datepicker" id="startDate">
+                  </div>
+                  <div class="col-md-5">
+                    <label for="endDate" class="form-label">End Date</label>
+                    <input type="date" class="form-control datepicker" id="endDate">
+                  </div>
+                  <div class="col-md-2 d-flex align-items-end">
+                    <button class="btn btn-primary" id="applyCustomRange">Apply</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="row mb-4">
+          <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card shadow-sm summary-card earnings h-100">
+              <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                  <div class="col mr-2">
+                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                      Total Earnings</div>
+                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalEarnings">₹0</div>
+                    <div class="mt-2 text-muted" id="earningsComparison">
+                      <i class="fas fa-arrow-up text-success"></i> 0% (vs last period)
+                    </div>
+                  </div>
+                  <div class="col-auto">
+                    <i class="fas fa-rupee-sign fa-2x text-gray-300"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card shadow-sm summary-card bookings h-100">
+              <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                  <div class="col mr-2">
+                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                      Completed Bookings</div>
+                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="completedBookings">0</div>
+                    <div class="mt-2 text-muted" id="bookingsComparison">
+                      <i class="fas fa-arrow-up text-success"></i> 0% (vs last period)
+                    </div>
+                  </div>
+                  <div class="col-auto">
+                    <i class="fas fa-calendar-check fa-2x text-gray-300"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card shadow-sm summary-card rating h-100">
+              <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                  <div class="col mr-2">
+                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                      Average Rating</div>
+                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="averageRating">0.0</div>
+                    <div class="mt-2 mb-0" id="ratingStars">
+                      <span class="rating-stars"></span>
+                    </div>
+                  </div>
+                  <div class="col-auto">
+                    <i class="fas fa-star fa-2x text-gray-300"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card shadow-sm summary-card payout h-100">
+              <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                  <div class="col mr-2">
+                    <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                      Pending Payout</div>
+                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="pendingPayout">₹0</div>
+                    <div class="mt-2 text-muted" id="nextPayoutDate">
+                      Next payout: --
+                    </div>
+                  </div>
+                  <div class="col-auto">
+                    <i class="fas fa-wallet fa-2x text-gray-300"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="row mb-4">
+          <!-- Earnings Chart -->
+          <div class="col-lg-8 mb-4">
+            <div class="card shadow-sm h-100">
+              <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                <h6 class="m-0 font-weight-bold text-primary">Earnings Overview</h6>
+                <div class="dropdown no-arrow">
+                  <a class="dropdown-toggle" href="#" role="button" id="earningsChartMenu" 
+                     data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                  </a>
+                  <div class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="earningsChartMenu">
+                    <a class="dropdown-item" href="#" onclick="downloadChart('earningsChart', 'earnings')">Download as PNG</a>
+                    <a class="dropdown-item" href="#" onclick="exportEarningsData()">Export Data</a>
+                  </div>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="chart-container">
+                  <canvas id="earningsChart"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bookings Chart -->
+          <div class="col-lg-4 mb-4">
+            <div class="card shadow-sm h-100">
+              <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                <h6 class="m-0 font-weight-bold text-primary">Bookings by Status</h6>
+              </div>
+              <div class="card-body">
+                <div class="chart-container">
+                  <canvas id="bookingsChart"></canvas>
+                </div>
+                <div class="mt-4 text-center small">
+                  <span class="mr-2">
+                    <i class="fas fa-circle text-primary"></i> Completed
+                  </span>
+                  <span class="mr-2">
+                    <i class="fas fa-circle text-success"></i> Confirmed
+                  </span>
+                  <span class="mr-2">
+                    <i class="fas fa-circle text-warning"></i> Pending
+                  </span>
+                  <span class="mr-2">
+                    <i class="fas fa-circle text-danger"></i> Cancelled
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Zone Performance and Recent Transactions -->
+        <div class="row">
+          <!-- Zone Performance -->
+          <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm h-100">
+              <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                <h6 class="m-0 font-weight-bold text-primary">District Performance</h6>
+                <a href="/travel_zones" class="btn btn-sm btn-primary">Manage Zones</a>
+              </div>
+              <div class="card-body zone-performance">
+                <div class="table-responsive">
+                  <table class="table table-hover" id="districtPerformanceTable">
+                    <thead>
+                      <tr>
+                        <th>District</th>
+                        <th>Bookings</th>
+                        <th>Earnings</th>
+                        <th>Rating</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <!-- Data will be loaded via JavaScript -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Transactions -->
+          <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm h-100">
+              <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                <h6 class="m-0 font-weight-bold text-primary">Recent Transactions</h6>
+                <button class="btn btn-sm btn-primary" onclick="exportTransactions()">Export</button>
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table class="table table-hover" id="transactionsTable">
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Booking</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <!-- Data will be loaded via JavaScript -->
+                    </tbody>
+                  </table>
+                </div>
+                <div class="text-center mt-2">
+                  <a href="#" class="btn btn-sm btn-link" onclick="viewAllTransactions()">View All Transactions</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-5 text-center">
+      <p class="mb-0 text-secondary fs--1 fw-medium">All rights reserved@travomate.co</p>
+    </footer>
+  </main>
+
+  <!-- Scripts -->
+  <script src="vendors/@popperjs/popper.min.js"></script>
+  <script src="vendors/bootstrap/bootstrap.min.js"></script>
+  <script src="assets/js/theme.js"></script>
+  <script>
+    // Global variables
+    let earningsChart, bookingsChart;
+    let currentPeriod = 'month';
+    let guideData = {};
+    const keralaDistricts = [
+        "Thiruvananthapuram", "Kollam", "Pathanamthitta", "Alappuzha", 
+        "Kottayam", "Idukki", "Ernakulam", "Thrissur", 
+        "Palakkad", "Malappuram", "Kozhikode", "Wayanad", 
+        "Kannur", "Kasaragod"
+    ];
+
+    function initializeDatePickers() {
+    const initPicker = () => {
+        const pickers = document.querySelectorAll('.datepicker');
+        if (pickers.length > 0) {
+            flatpickr(".datepicker", {
+                dateFormat: "Y-m-d",
+                defaultDate: "today",
+                maxDate: "today"
+            });
+            return true;
+        }
+        return false;
+    };
+
+    // Try immediately
+    if (!initPicker()) {
+        // If not found, try again after a short delay
+        setTimeout(() => {
+            if (!initPicker()) {
+                console.warn("Datepicker elements not found after retry");
+            }
+        }, 500);
+    }
+}
+
+// Update DOMContentLoaded event listener
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize components only after DOM is fully loaded
+    setTimeout(() => {
+        try {
+            initializeDatePickers();
+            loadGuideData();
+            setupTimeFilters();
+            initializeCharts();
+        } catch (error) {
+            console.error("Initialization error:", error);
+            showErrorToast("Failed to initialize page components");
+        }
+    }, 100); // Small delay to ensure all DOM elements are ready
+});
+
+    // Load guide profile data
+    function loadGuideData() {
+        showLoading();
+        const guideEmail = "{{ frappe.session.user }}";
+        
+        $.ajax({
+            url: '/api/method/travomate.api.get_guide_for_user',
+            type: 'GET',
+            data: { user: guideEmail },
+            headers: { 'X-Frappe-CSRF-Token': $('meta[name="csrf-token"]').attr('content') },
+            success: function(response) {
+                if (response.message?.guide) {
+                    getGuideDetails(response.message.guide);
+                } else {
+                    hideLoading();
+                    const errorMsg = response.message?.message || "Guide profile not found";
+                    showErrorToast(errorMsg + ". Please complete your profile first.");
+                    setTimeout(() => window.location.href = '/guide_profile', 2000);
+                }
+            },
+            error: function(error) {
+                hideLoading();
+                console.error("Error loading guide data:", error);
+                showErrorToast("Error loading guide data. Please try again.");
+            }
+        });
+    }
+
+    function getGuideDetails(guideName) {
+    showLoading();
+    console.log("Fetching details for guide:", guideName);
+    
+    $.ajax({
+        url: '/api/method/travomate.api.get_guide_details',
+        type: 'GET',
+        data: { guide: guideName },
+        success: function(response) {
+            console.log("Guide details response:", response);
+            if (response.message && response.message.data) {
+                guideData = response.message.data;
+                console.log("Guide data loaded:", guideData);
+                updateGuideInfo(guideData);
+                loadReportData(currentPeriod);
+            } else {
+                const errorMsg = response.message?.message || "Could not load guide details";
+                console.error(errorMsg);
+                showErrorToast(errorMsg);
+            }
+        },
+        error: function(error) {
+            console.error("AJAX Error:", error);
+            showErrorToast("Error loading guide details");
+        }
+    });
+}
+
+    // Update guide information in the UI
+    function updateGuideInfo(guide) {
+        renderStars(guide.rating || 0, "#ratingStars");
+    }
+
+    // Setup time period filters
+    function setupTimeFilters() {
+        const timeFilterButtons = document.querySelectorAll('.time-filter .btn');
+        timeFilterButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                timeFilterButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                
+                currentPeriod = this.dataset.period;
+                if (currentPeriod === 'custom') {
+                    document.getElementById('customRangePicker').classList.remove('hidden');
+                } else {
+                    document.getElementById('customRangePicker').classList.add('hidden');
+                    loadReportData(currentPeriod);
+                }
+            });
+        });
+
+        // Apply custom range
+        document.getElementById('applyCustomRange').addEventListener('click', function() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            if (startDate && endDate) {
+                loadReportData('custom', startDate, endDate);
+            } else {
+                showErrorToast("Please select both start and end dates");
+            }
+        });
+    }
+
+    // Initialize charts
+    function initializeCharts() {
+        // Earnings Chart (Bar Chart)
+        const earningsCtx = document.getElementById('earningsChart').getContext('2d');
+        earningsChart = new Chart(earningsCtx, {
+            type: 'bar',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Earnings (₹)',
+                    data: [],
+                    backgroundColor: 'rgba(78, 115, 223, 0.8)',
+                    borderColor: 'rgba(78, 115, 223, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '₹' + value;
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return 'Earnings: ₹' + context.raw;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Bookings Chart (Doughnut Chart)
+        const bookingsCtx = document.getElementById('bookingsChart').getContext('2d');
+        bookingsChart = new Chart(bookingsCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Completed', 'Confirmed', 'Pending', 'Cancelled'],
+                datasets: [{
+                    data: [0, 0, 0, 0],
+                    backgroundColor: ['#4e73df', '#1cc88a', '#f6c23e', '#e74a3b'],
+                    hoverBackgroundColor: ['#2e59d9', '#17a673', '#dda20a', '#be2617'],
+                    hoverBorderColor: "rgba(234, 236, 244, 1)",
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = Math.round((value / total) * 100);
+                                return `${label}: ${value} (${percentage}%)`;
+                            }
+                        }
+                    }
+                },
+                cutout: '70%',
+            },
+        });
+    }
+
+        // Load report data for the selected period
+        function loadReportData(period, startDate = null, endDate = null) {
+        console.log("Loading report data for:", period, "from:", startDate, "to:", endDate);
+        showLoading();
+        
+        if (!guideData.name) {
+            console.error("Guide data not loaded yet. Current guideData:", guideData);
+            hideLoading();
+            return;
+        }
+
+        // Add debug logs for each API call
+        Promise.allSettled([
+            getBookingStats(guideData.name, period, startDate, endDate).then(res => {
+                console.log("Booking stats response:", res);
+                return res;
+            }),
+            getEarningsTrend(guideData.name, period, startDate, endDate).then(res => {
+                console.log("Earnings trend response:", res);
+                return res;
+            }),
+            getDistrictPerformance(guideData.name, startDate, endDate).then(res => {
+                console.log("District performance response:", res);
+                return res;
+            }),
+            getRecentTransactions(guideData.name, startDate, endDate).then(res => {
+                console.log("Recent transactions response:", res);
+                return res;
+            })
+        ]).then((results) => {
+            console.log("All API results:", results);
+            const stats = results[0].status === 'fulfilled' ? results[0].value : null;
+            const earnings = results[1].status === 'fulfilled' ? results[1].value : null;
+            const districtsResponse = results[2].status === 'fulfilled' ? results[2].value : null;
+            const transactions = results[3].status === 'fulfilled' ? results[3].value : null;
+
+            // Handle cases where some requests failed
+            if (!stats || !earnings || !districtsResponse || !transactions) {
+                showErrorToast("Some data couldn't be loaded. Showing partial results.");
+            }
+
+            // Ensure we have arrays for districts and transactions
+            const districts = districtsResponse?.data || [];
+            const txData = transactions?.transactions || [];
+
+            const reportData = {
+                summary: {
+                    totalEarnings: stats?.total_earnings || 0,
+                    completedBookings: stats?.completed_bookings || 0,
+                    averageRating: guideData.rating || 0,
+                    pendingPayout: stats?.pending_payout || 0,
+                    nextPayoutDate: "15 " + new Date().toLocaleString('default', { month: 'long' }),
+                    earningsComparison: stats?.earnings_comparison || 0,
+                    bookingsComparison: stats?.bookings_comparison || 0
+                },
+                earningsTrend: earnings || { labels: [], data: [] },
+                bookingsByStatus: {
+                    completed: stats?.completed_bookings || 0,
+                    confirmed: stats?.confirmed_bookings || 0,
+                    pending: stats?.pending_bookings || 0,
+                    cancelled: stats?.cancelled_bookings || 0
+                },
+                districtPerformance: districts,
+                recentTransactions: txData
+            };
+            
+            updateDashboard(reportData);
+            hideLoading();
+        }).catch(error => {
+            console.error("Error loading report data:", error);
+            hideLoading();
+            showErrorToast("Failed to load report data. Please try again.");
+        });
+    }
+
+    // Get booking statistics
+    function getBookingStats(guide, period, startDate, endDate) {
+        return new Promise((resolve, reject) => {
+            $.ajax({
+                url: '/api/method/travomate.api.get_guide_booking_stats',
+                type: 'GET',
+                data: {
+                    guide: guide,
+                    from_date: startDate,
+                    to_date: endDate
+                },
+                headers: {
+                    'X-Frappe-CSRF-Token': $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function(response) {
+                    if (response.message) {
+                        resolve(response.message);
+                    } else {
+                        reject("No data returned");
+                    }
+                },
+                error: function(error) {
+                    reject(error);
+                }
+            });
+        });
+    }
+
+    // Get earnings trend data
+    function getEarningsTrend(guide, period, startDate, endDate) {
+        return new Promise((resolve, reject) => {
+            $.ajax({
+                url: '/api/method/travomate.api.get_guide_earnings_trend',
+                type: 'GET',
+                data: {
+                    guide: guide,
+                    period: period,
+                    from_date: startDate,
+                    to_date: endDate
+                },
+                headers: {
+                    'X-Frappe-CSRF-Token': $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function(response) {
+                    if (response.message) {
+                        resolve(response.message);
+                    } else {
+                        reject("No data returned");
+                    }
+                },
+                error: function(error) {
+                    reject(error);
+                }
+            });
+        });
+    }
+
+    // Get district performance data
+    function getDistrictPerformance(guide, startDate, endDate) {
+        return new Promise((resolve, reject) => {
+            $.ajax({
+                url: '/api/method/travomate.api.get_guide_district_performance',
+                type: 'GET',
+                data: {
+                    guide: guide,
+                    from_date: startDate,
+                    to_date: endDate
+                },
+                headers: {
+                    'X-Frappe-CSRF-Token': $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function(response) {
+                    if (response.message) {
+                        resolve(response.message);
+                    } else {
+                        reject("No data returned");
+                    }
+                },
+                error: function(error) {
+                    reject(error);
+                }
+            });
+        });
+    }
+
+    // Get recent transactions
+    function getRecentTransactions(guide, startDate, endDate) {
+        return new Promise((resolve, reject) => {
+            $.ajax({
+                url: '/api/method/travomate.api.get_guide_recent_transactions',
+                type: 'GET',
+                data: {
+                    guide: guide,
+                    from_date: startDate,
+                    to_date: endDate,
+                    limit: 5
+                },
+                headers: {
+                    'X-Frappe-CSRF-Token': $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function(response) {
+                    resolve(response.message || { transactions: [] });
+                },
+                error: function(error) {
+                    console.error("Error loading transactions:", error);
+                    resolve({ transactions: [] });
+                }
+            });
+        });
+    }
+
+    function updateDashboard(data) {
+    // Ensure we always have valid numbers
+    const safeData = {
+        summary: {
+            totalEarnings: data.summary?.totalEarnings || 0,
+            completedBookings: data.summary?.completedBookings || 0,
+            averageRating: data.summary?.averageRating || 0,
+            pendingPayout: data.summary?.pendingPayout || 0,
+            nextPayoutDate: data.summary?.nextPayoutDate || "Not available",
+            earningsComparison: data.summary?.earningsComparison || 0,
+            bookingsComparison: data.summary?.bookingsComparison || 0
+        },
+        earningsTrend: {
+            labels: data.earningsTrend?.labels || [],
+            data: data.earningsTrend?.data || []
+        },
+        bookingsByStatus: {
+            completed: data.bookingsByStatus?.completed || 0,
+            confirmed: data.bookingsByStatus?.confirmed || 0,
+            pending: data.bookingsByStatus?.pending || 0,
+            cancelled: data.bookingsByStatus?.cancelled || 0
+        },
+        districtPerformance: data.districtPerformance || [],
+        recentTransactions: data.recentTransactions || []
+    };
+
+    // Update summary cards
+    document.getElementById('totalEarnings').textContent = '₹' + safeData.summary.totalEarnings.toLocaleString();
+    document.getElementById('completedBookings').textContent = safeData.summary.completedBookings;
+    document.getElementById('averageRating').textContent = safeData.summary.averageRating.toFixed(1);
+    document.getElementById('pendingPayout').textContent = '₹' + safeData.summary.pendingPayout.toLocaleString();
+    document.getElementById('nextPayoutDate').textContent = 'Next payout: ' + safeData.summary.nextPayoutDate;
+    
+    // Update comparisons (force at least 0% if no data)
+    const earningsComparison = document.getElementById('earningsComparison');
+    const bookingsComparison = document.getElementById('bookingsComparison');
+    
+    earningsComparison.innerHTML = `<i class="fas fa-arrow-${safeData.summary.earningsComparison >= 0 ? 'up text-success' : 'down text-danger'}"></i> ` +
+        `${Math.abs(safeData.summary.earningsComparison)}% (vs last period)`;
+    
+    bookingsComparison.innerHTML = `<i class="fas fa-arrow-${safeData.summary.bookingsComparison >= 0 ? 'up text-success' : 'down text-danger'}"></i> ` +
+        `${Math.abs(safeData.summary.bookingsComparison)}% (vs last period)`;
+    
+    // Update stars (show empty stars if no rating)
+    renderStars(safeData.summary.averageRating, "#ratingStars");
+    
+    // Update charts with safe data
+    updateEarningsChart(safeData.earningsTrend.labels, safeData.earningsTrend.data);
+    updateBookingsChart(safeData.bookingsByStatus);
+    
+    // Update tables with empty state handling
+    updateDistrictPerformance(safeData.districtPerformance);
+    updateTransactionsTable(safeData.recentTransactions);
+}
+
+    // Update earnings chart
+    function updateEarningsChart(labels, data) {
+    // If no data, show a friendly message
+    if (data.length === 0) {
+        labels = ["No data available"];
+        data = [1]; // Single zero-height bar
+    }
+
+    earningsChart.data.labels = labels;
+    earningsChart.data.datasets[0].data = data;
+    
+    // Update chart with empty state options
+    earningsChart.options.scales.y.min = 0;
+    earningsChart.options.scales.y.max = data.length ? Math.max(...data) * 1.2 : 1000; // Prevent NaN errors
+    earningsChart.update();
+}
+
+    // Update bookings chart
+    function updateBookingsChart(data) {
+        bookingsChart.data.datasets[0].data = [
+            data.completed || 0,
+            data.confirmed || 0,
+            data.pending || 0,
+            data.cancelled || 0
+        ];
+        bookingsChart.update();
+    }
+
+    // Update district performance table
+    function updateDistrictPerformance(districts) {
+    const tableBody = document.querySelector('#districtPerformanceTable tbody');
+    tableBody.innerHTML = '';
+    
+    // Special case: When guide exists but no district data
+    if (guideData.name && (!districts || districts.length === 0)) {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td colspan="4" class="text-center py-4">
+                <i class="fas fa-exclamation-circle text-warning"></i>
+                <p>Bookings exist but district data is missing</p>
+                <small class="text-muted">
+                    Ensure your bookings have districts assigned
+                </small>
+                <div class="mt-2">
+                    <a href="/booking_requests" class="btn btn-sm btn-warning">
+                        Check Bookings
+                    </a>
+                </div>
+            </td>
+        `;
+        tableBody.appendChild(row);
+        return;
+    }
+        
+        districts.forEach(district => {
+            const row = document.createElement('tr');
+            
+            row.innerHTML = `
+                <td>${district.district || 'N/A'}</td>
+                <td>${district.bookings || 0}</td>
+                <td>₹${(district.earnings || 0).toLocaleString()}</td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <div class="rating-stars me-2">
+                            ${renderStarsHtml(district.rating || 0)}
+                        </div>
+                        <span>${district.rating || 0}</span>
+                    </div>
+                </td>
+            `;
+            
+            tableBody.appendChild(row);
+        });
+    }
+
+    // Update transactions table
+    function updateTransactionsTable(transactions) {
+        const tableBody = document.querySelector('#transactionsTable tbody');
+        tableBody.innerHTML = '';
+        
+        if (!transactions || transactions.length === 0) {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td colspan="4" class="text-center py-4">
+                    <i class="fas fa-exchange-alt fa-3x text-muted mb-3"></i>
+                    <p class="mb-0">No transactions found</p>
+                    <small class="text-muted">You haven't received any payments yet</small>
+                </td>
+            `;
+            tableBody.appendChild(row);
+            return;
+        }
+        
+        transactions.forEach(tx => {
+            const row = document.createElement('tr');
+            let statusBadge;
+            
+            if (tx.status === 'Completed') {
+                statusBadge = '<span class="badge bg-success">Completed</span>';
+            } else if (tx.status === 'Pending') {
+                statusBadge = '<span class="badge bg-warning">Pending</span>';
+            } else {
+                statusBadge = '<span class="badge bg-danger">Failed</span>';
+            }
+            
+            row.innerHTML = `
+                <td>${tx.date || 'N/A'}</td>
+                <td>${tx.booking || 'N/A'}</td>
+                <td>₹${(tx.amount || 0).toLocaleString()}</td>
+                <td>${statusBadge}</td>
+            `;
+            
+            tableBody.appendChild(row);
+        });
+    }
+
+    // Render stars (as HTML string)
+    function renderStarsHtml(rating) {
+        const fullStars = Math.floor(rating);
+        const hasHalfStar = rating % 1 >= 0.5;
+        let stars = '';
+        
+        for (let i = 1; i <= 5; i++) {
+            if (i <= fullStars) {
+                stars += '<i class="fas fa-star"></i>';
+            } else if (i === fullStars + 1 && hasHalfStar) {
+                stars += '<i class="fas fa-star-half-alt"></i>';
+            } else {
+                stars += '<i class="far fa-star"></i>';
+            }
+        }
+        
+        return stars;
+    }
+
+    // Render stars in a container
+    function renderStars(rating, containerId) {
+        const container = document.querySelector(containerId);
+        if (container) {
+            container.innerHTML = renderStarsHtml(rating);
+        }
+    }
+
+    // Show loading state
+    function showLoading() {
+        document.getElementById('loadingSpinner').style.display = 'flex';
+    }
+
+    // Hide loading state
+    function hideLoading() {
+        document.getElementById('loadingSpinner').style.display = 'none';
+    }
+
+    // Download chart as PNG
+    function downloadChart(chartId, name) {
+        const link = document.createElement('a');
+        link.download = `${name}-chart.png`;
+        link.href = document.getElementById(chartId).toDataURL('image/png');
+        link.click();
+    }
+
+    // Export earnings data
+    function exportEarningsData() {
+        if (!guideData.name) {
+            showErrorToast("Guide data not loaded");
+            return;
+        }
+
+        // Show loading state
+        const exportBtn = document.querySelector('[onclick="exportEarningsData()"]');
+        const originalText = exportBtn.innerHTML;
+        exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exporting...';
+        exportBtn.disabled = true;
+
+        window.location.href = `/api/method/travomate.api.export_guide_earnings?guide=${guideData.name}&period=${currentPeriod}`;
+        
+        // Reset button after delay
+        setTimeout(() => {
+            exportBtn.innerHTML = originalText;
+            exportBtn.disabled = false;
+        }, 3000);
+    }
+
+    // Export transactions
+    function exportTransactions() {
+        if (!guideData.name) {
+            showErrorToast("Guide data not loaded");
+            return;
+        }
+
+        // Show loading state
+        const exportBtn = document.querySelector('[onclick="exportTransactions()"]');
+        const originalText = exportBtn.innerHTML;
+        exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exporting...';
+        exportBtn.disabled = true;
+
+        window.location.href = `/api/method/travomate.api.export_guide_transactions?guide=${guideData.name}`;
+        
+        // Reset button after delay
+        setTimeout(() => {
+            exportBtn.innerHTML = originalText;
+            exportBtn.disabled = false;
+        }, 3000);
+    }
+
+    // View all transactions
+    function viewAllTransactions() {
+        if (!guideData.name) {
+            showErrorToast("Guide data not loaded");
+            return;
+        }
+
+        window.location.href = `/guide_transactions?guide=${guideData.name}`;
+    }
+
+    // Show success toast
+    function showSuccessToast(message) {
+        const toast = $(`
+            <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+                <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="toast-header bg-success text-white">
+                        <strong class="me-auto">Success</strong>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                    <div class="toast-body">
+                        ${message}
+                    </div>
+                </div>
+            </div>
+        `);
+        $('body').append(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+
+    // Show error toast
+    function showErrorToast(message) {
+        const toast = $(`
+            <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+                <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="toast-header bg-danger text-white">
+                        <strong class="me-auto">Error</strong>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                    <div class="toast-body">
+                        ${message}
+                    </div>
+                </div>
+            </div>
+        `);
+        $('body').append(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+
+    // Logout function
+function logout() {
+    fetch('/api/method/logout', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        "X-Frappe-CSRF-Token": $('meta[name="csrf-token"]').attr("content"),
+      },
+    }).then(response => {
+      if (response.ok) {
+        window.location.href = 'index.html';
+      } else {
+        alert('Logout failed. Please try again.');
+      }
+    }).catch(error => {
+      console.error('Error:', error);
+      alert('An error occurred. Please try again.');
+    });
+}
+  </script>
+</body>
+</html>

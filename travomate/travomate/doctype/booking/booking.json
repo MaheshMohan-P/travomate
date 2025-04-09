@@ -17,7 +17,6 @@
   "end_date",
   "daily_rate",
   "total_amount",
-  "language_spoken",
   "notes",
   "payment_status",
   "status",
@@ -91,11 +90,6 @@
    "fieldtype": "Select",
    "label": "Payment Status",
    "options": "Unpaid\nPaid\nPartially Paid"
-  },
-  {
-   "fieldname": "language_spoken",
-   "fieldtype": "Data",
-   "label": "Language Spoken"
   },
   {
    "default": "Pending",
@@ -182,7 +176,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-04-02 01:55:33.730909",
+ "modified": "2025-04-07 11:33:43.470403",
  "modified_by": "Administrator",
  "module": "Travomate",
  "name": "Booking",

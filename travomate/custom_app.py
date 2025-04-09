@@ -993,12 +993,12 @@ def create_booking(**kwargs):
                 }
             }
 
-        except frappe.DuplicateEntryError:
-            frappe.response['http_status_code'] = 409
-            return {
-                "status": "error",
-                "message": "This booking already exists"
-            }
+        # except frappe.DuplicateEntryError:
+        #     frappe.response['http_status_code'] = 409
+        #     return {
+        #         "status": "error",
+        #         "message": "This booking already exists"
+        #     }
             
         except Exception as e:
             frappe.db.rollback()
@@ -1518,233 +1518,218 @@ def submit_review_reply(review_id, reply):
         )
         return {"status": "error", "message": f"Error submitting reply: {str(e)}"}
 
-@frappe.whitelist()
-def submit_review_reply(review_id, reply):
-    """Submit a guide's reply to a review"""
-    try:
-        review = frappe.get_doc("Review", review_id)
-        review.guide_reply = reply
-        review.reply_date = frappe.utils.nowdate()
-        review.save(ignore_permissions=True)
+# @frappe.whitelist()
+# def submit_guide_reply(review_id, reply_text):
+#     try:
+#         review = frappe.get_doc("Review", review_id)
         
-        return {"status": "success", "message": "Reply submitted successfully"}
+#         # Validate guide ownership
+#         if frappe.session.user != frappe.db.get_value("Guide", review.guide, "user"):
+#             frappe.throw("You can only reply to your own reviews")
         
-    except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "Review reply failed")
-        return {"status": "error", "message": str(e)}
-
-@frappe.whitelist()
-def submit_guide_reply(review_id, reply_text):
-    try:
-        review = frappe.get_doc("Review", review_id)
+#         review.guide_reply = reply_text
+#         review.reply_date = frappe.utils.now_datetime()
+#         review.save(ignore_permissions=True)
         
-        # Validate guide ownership
-        if frappe.session.user != frappe.db.get_value("Guide", review.guide, "user"):
-            frappe.throw("You can only reply to your own reviews")
+#         return {"status": "success"}
         
-        review.guide_reply = reply_text
-        review.reply_date = frappe.utils.now_datetime()
-        review.save(ignore_permissions=True)
-        
-        return {"status": "success"}
-        
-    except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "Guide Reply Failed")
-        return {"status": "error", "message": str(e)}
+#     except Exception as e:
+#         frappe.log_error(frappe.get_traceback(), "Guide Reply Failed")
+#         return {"status": "error", "message": str(e)}
     
-@frappe.whitelist(allow_guest=True)
-def payment_webhook():
-    try:
-        payload = frappe.request.get_json()
+# @frappe.whitelist(allow_guest=True)
+# def payment_webhook():
+#     try:
+#         payload = frappe.request.get_json()
         
-        if payload.get("event") == "payment.captured":
-            booking_id = payload.get("payload").get("payment").get("notes", {}).get("booking")
+#         if payload.get("event") == "payment.captured":
+#             booking_id = payload.get("payload").get("payment").get("notes", {}).get("booking")
             
-            payment = frappe.new_doc("Payment")
-            payment.update({
-                "booking": booking_id,
-                "status": "Completed",
-                "transaction_id": payload.get("payload").get("payment").get("id"),
-                "payment_gateway_response": frappe.as_json(payload),
-                "receipt_url": payload.get("payload").get("payment").get("receipt"),
-                "capture_status": "Captured",
-                "captured_amount": payload.get("payload").get("payment").get("amount")/100,
-                "capture_date": now_datetime()
-            })
-            payment.insert(ignore_permissions=True)
-            payment.submit()
+#             payment = frappe.new_doc("Payment")
+#             payment.update({
+#                 "booking": booking_id,
+#                 "status": "Completed",
+#                 "transaction_id": payload.get("payload").get("payment").get("id"),
+#                 "payment_gateway_response": frappe.as_json(payload),
+#                 "receipt_url": payload.get("payload").get("payment").get("receipt"),
+#                 "capture_status": "Captured",
+#                 "captured_amount": payload.get("payload").get("payment").get("amount")/100,
+#                 "capture_date": now_datetime()
+#             })
+#             payment.insert(ignore_permissions=True)
+#             payment.submit()
             
-            return {"status": "success"}
+#             return {"status": "success"}
     
-    except Exception as e:
-        frappe.log_error("Payment Webhook Failed", str(e))
-        return {"status": "error"}
+#     except Exception as e:
+#         frappe.log_error("Payment Webhook Failed", str(e))
+#         return {"status": "error"}
     
-@frappe.whitelist()
-def get_booking_payment_details(booking_id):
-    try:
-        booking = frappe.get_doc("Booking", booking_id)
+# @frappe.whitelist()
+# def get_booking_payment_details(booking_id):
+#     try:
+#         booking = frappe.get_doc("Booking", booking_id)
         
-        if booking.status != "Confirmed":
-            frappe.throw("Only confirmed bookings can be paid for")
+#         if booking.status != "Confirmed":
+#             frappe.throw("Only confirmed bookings can be paid for")
             
-        return {
-            "status": "success",
-            "booking": {
-                "name": booking.name,
-                "guide_name": frappe.db.get_value("Guide", booking.guide, "full_name"),
-                "start_date": booking.start_date.strftime("%d %b %Y"),
-                "end_date": booking.end_date.strftime("%d %b %Y"),
-                "total_amount": booking.total_amount
-            }
-        }
+#         return {
+#             "status": "success",
+#             "booking": {
+#                 "name": booking.name,
+#                 "guide_name": frappe.db.get_value("Guide", booking.guide, "full_name"),
+#                 "start_date": booking.start_date.strftime("%d %b %Y"),
+#                 "end_date": booking.end_date.strftime("%d %b %Y"),
+#                 "total_amount": booking.total_amount
+#             }
+#         }
         
-    except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "Payment Details Error")
-        return {"status": "error", "message": str(e)}
+#     except Exception as e:
+#         frappe.log_error(frappe.get_traceback(), "Payment Details Error")
+#         return {"status": "error", "message": str(e)}
 
-@frappe.whitelist()
-def initiate_payment(booking_id, payment_method):
-    try:
-        booking = frappe.get_doc("Booking", booking_id)
+# @frappe.whitelist()
+# def initiate_payment(booking_id, payment_method):
+#     try:
+#         booking = frappe.get_doc("Booking", booking_id)
         
-        # Create Payment Request
-        pr = frappe.new_doc("Payment Request")
-        pr.update({
-            "reference_doctype": "Booking",
-            "reference_name": booking.name,
-            "subject": f"Payment for Booking {booking.name}",
-            "grand_total": booking.total_amount,
-            "payment_gateway": "Razorpay" if payment_method == "razorpay" else "UPI",
-            "email_to": frappe.db.get_value("Traveler", booking.traveler, "email")
-        })
-        pr.insert(ignore_permissions=True)
+#         # Create Payment Request
+#         pr = frappe.new_doc("Payment Request")
+#         pr.update({
+#             "reference_doctype": "Booking",
+#             "reference_name": booking.name,
+#             "subject": f"Payment for Booking {booking.name}",
+#             "grand_total": booking.total_amount,
+#             "payment_gateway": "Razorpay" if payment_method == "razorpay" else "UPI",
+#             "email_to": frappe.db.get_value("Traveler", booking.traveler, "email")
+#         })
+#         pr.insert(ignore_permissions=True)
         
-        return {
-            "status": "success",
-            "payment_url": pr.get_payment_url()
-        }
+#         return {
+#             "status": "success",
+#             "payment_url": pr.get_payment_url()
+#         }
         
-    except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "Payment Initiation Failed")
-        return {"status": "error", "message": str(e)}
+#     except Exception as e:
+#         frappe.log_error(frappe.get_traceback(), "Payment Initiation Failed")
+#         return {"status": "error", "message": str(e)}
     
-@frappe.whitelist()
-def mark_as_paid(booking_id, amount, method, details=None):
-    """Mark a booking as paid and create payment record"""
-    try:
-        # Standardize payment method first
-        method = method.strip().title()  # Converts "card" → "Card", "upi" → "Upi"
+# @frappe.whitelist()
+# def mark_as_paid(booking_id, amount, method, details=None):
+#     """Mark a booking as paid and create payment record"""
+#     try:
+#         # Standardize payment method first
+#         method = method.strip().title()  # Converts "card" → "Card", "upi" → "Upi"
         
-        # Manually handle special cases
-        if method.lower() == "upi":
-            method = "UPI"
-        elif method.lower() in ["bank", "bank transfer"]:
-            method = "Bank Transfer"
+#         # Manually handle special cases
+#         if method.lower() == "upi":
+#             method = "UPI"
+#         elif method.lower() in ["bank", "bank transfer"]:
+#             method = "Bank Transfer"
         
-        # Validate payment method
-        valid_methods = ["Card", "UPI", "Bank Transfer", "Cash"]
-        if method not in valid_methods:
-            frappe.throw(f'Payment Method must be one of: {", ".join(valid_methods)}')
+#         # Validate payment method
+#         valid_methods = ["Card", "UPI", "Bank Transfer", "Cash"]
+#         if method not in valid_methods:
+#             frappe.throw(f'Payment Method must be one of: {", ".join(valid_methods)}')
 
-        # Rest of your existing code...
-        payment = frappe.new_doc("Payment")
-        payment.update({
-            # ...
-            "payment_method": method,  # Use the standardized value
-            # ...
-        })
+#         # Rest of your existing code...
+#         payment = frappe.new_doc("Payment")
+#         payment.update({
+#             # ...
+#             "payment_method": method,  # Use the standardized value
+#             # ...
+#         })
 
-        # Update method-specific checks to use standardized values
-        if method == "Card":
-            payment.update({
-                "card_last_4": details.get("cardNumber", "")[-4:] if details else None,
-                "card_type": "Credit/Debit"
-            })
-        elif method == "UPI":  # Now uppercase
-            payment.update({
-                "upi_id": details.get("upiId") if details else None
-            })
-        elif method == "Bank Transfer":  # Full name
-            payment.update({
-                "bank_reference": details.get("transactionRef") if details else None
-            })
+#         # Update method-specific checks to use standardized values
+#         if method == "Card":
+#             payment.update({
+#                 "card_last_4": details.get("cardNumber", "")[-4:] if details else None,
+#                 "card_type": "Credit/Debit"
+#             })
+#         elif method == "UPI":  # Now uppercase
+#             payment.update({
+#                 "upi_id": details.get("upiId") if details else None
+#             })
+#         elif method == "Bank Transfer":  # Full name
+#             payment.update({
+#                 "bank_reference": details.get("transactionRef") if details else None
+#             })
 
-        payment.insert(ignore_permissions=True)
-        payment.submit()
+#         payment.insert(ignore_permissions=True)
+#         payment.submit()
 
-        # Update booking status
-        frappe.db.set_value("Booking", booking.name, {
-            "payment_status": "Paid",
-            "payment_reference": payment.name
-        })
+#         # Update booking status
+#         frappe.db.set_value("Booking", booking.name, {
+#             "payment_status": "Paid",
+#             "payment_reference": payment.name
+#         })
 
-        # Send payment confirmation email
-        send_payment_confirmation(booking, payment)
+#         # Send payment confirmation email
+#         send_payment_confirmation(booking, payment)
 
-        return {
-            "status": "success",
-            "message": "Payment recorded successfully",
-            "payment_id": payment.name
-        }
+#         return {
+#             "status": "success",
+#             "message": "Payment recorded successfully",
+#             "payment_id": payment.name
+#         }
 
-    except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "Payment Processing Error")
-        frappe.db.rollback()
-        return {
-            "status": "error",
-            "message": str(e)
-        }
+#     except Exception as e:
+#         frappe.log_error(frappe.get_traceback(), "Payment Processing Error")
+#         frappe.db.rollback()
+#         return {
+#             "status": "error",
+#             "message": str(e)
+#         }
 
-def send_payment_confirmation(booking, payment):
-    """Send payment confirmation email to traveler"""
-    try:
-        traveler = frappe.get_doc("Traveler", booking.traveler)
-        guide = frappe.get_doc("Guide", booking.guide)
+# def send_payment_confirmation(booking, payment):
+#     """Send payment confirmation email to traveler"""
+#     try:
+#         traveler = frappe.get_doc("Traveler", booking.traveler)
+#         guide = frappe.get_doc("Guide", booking.guide)
 
-        subject = f"Payment Confirmation for Booking {booking.name}"
+#         subject = f"Payment Confirmation for Booking {booking.name}"
         
-        message = f"""
-            <p>Dear {traveler.full_name},</p>
+#         message = f"""
+#             <p>Dear {traveler.full_name},</p>
             
-            <p>We have successfully received your payment of <strong>₹{payment.amount}</strong> 
-            for your booking with {guide.full_name}.</p>
+#             <p>We have successfully received your payment of <strong>₹{payment.amount}</strong> 
+#             for your booking with {guide.full_name}.</p>
             
-            <p><strong>Booking Details:</strong></p>
-            <ul>
-                <li>Booking Reference: {booking.name}</li>
-                <li>Dates: {booking.start_date} to {booking.end_date}</li>
-                <li>Location: {booking.district}, {booking.area}</li>
-                <li>Payment Method: {payment.payment_method}</li>
-                <li>Payment Date: {payment.payment_date}</li>
-            </ul>
+#             <p><strong>Booking Details:</strong></p>
+#             <ul>
+#                 <li>Booking Reference: {booking.name}</li>
+#                 <li>Dates: {booking.start_date} to {booking.end_date}</li>
+#                 <li>Location: {booking.district}, {booking.area}</li>
+#                 <li>Payment Method: {payment.payment_method}</li>
+#                 <li>Payment Date: {payment.payment_date}</li>
+#             </ul>
             
-            <p>Thank you for using Travomate!</p>
-        """
+#             <p>Thank you for using Travomate!</p>
+#         """
 
-        frappe.sendmail(
-            recipients=[traveler.email],
-            subject=subject,
-            message=message,
-            now=True
-        )
+#         frappe.sendmail(
+#             recipients=[traveler.email],
+#             subject=subject,
+#             message=message,
+#             now=True
+#         )
 
-        # Also notify guide
-        if frappe.db.exists("Notification Settings", guide.name):
-            guide_message = f"""
-                <p>Payment received for booking {booking.name} from {traveler.full_name}.</p>
-                <p>Amount: ₹{payment.amount}</p>
-                <p>Payment Method: {payment.payment_method}</p>
-            """
-            frappe.sendmail(
-                recipients=[guide.email],
-                subject=f"Payment Received for Booking {booking.name}",
-                message=guide_message,
-                now=True
-            )
+#         # Also notify guide
+#         if frappe.db.exists("Notification Settings", guide.name):
+#             guide_message = f"""
+#                 <p>Payment received for booking {booking.name} from {traveler.full_name}.</p>
+#                 <p>Amount: ₹{payment.amount}</p>
+#                 <p>Payment Method: {payment.payment_method}</p>
+#             """
+#             frappe.sendmail(
+#                 recipients=[guide.email],
+#                 subject=f"Payment Received for Booking {booking.name}",
+#                 message=guide_message,
+#                 now=True
+#             )
 
-    except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "Failed to send payment confirmation")
+#     except Exception as e:
+#         frappe.log_error(frappe.get_traceback(), "Failed to send payment confirmation")
 
 @frappe.whitelist()
 def create_travel_payment(booking=None, amount=0, payment_method="Cash", payment_details=None):
@@ -1812,3 +1797,77 @@ def create_travel_payment(booking=None, amount=0, payment_method="Cash", payment
             "status": "error",
             "message": str(e)
         }
+    
+@frappe.whitelist()
+def get_traveler_reviews(traveler_email):
+    """Get all reviews by a traveler along with stats"""
+    try:
+        # Get traveler name from email
+        traveler_name = frappe.db.get_value("Traveler", {"email": traveler_email}, "name")
+        if not traveler_name:
+            return {"status": "error", "message": "Traveler not found"}
+
+        # Get all reviews by this traveler
+        reviews = frappe.get_all("Review",
+            filters={"traveler": traveler_name},
+            fields=["name", "guide", "guide_name", "rating", "review_text",
+                   "review_date", "trip_date", "booking", "guide_reply", "reply_date"],
+            order_by="review_date desc"
+        )
+
+        # Calculate stats
+        total_reviews = len(reviews)
+        replies_received = sum(1 for r in reviews if r.get("guide_reply"))
+        
+        if total_reviews > 0:
+            average_rating = sum(r["rating"] for r in reviews) / total_reviews
+        else:
+            average_rating = 0
+
+        return {
+            "status": "success",
+            "reviews": reviews,
+            "stats": {
+                "average_rating": round(average_rating, 1),
+                "total_reviews": total_reviews,
+                "replies_received": replies_received
+            }
+        }
+
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Failed to fetch traveler reviews")
+        return {"status": "error", "message": str(e)}
+
+@frappe.whitelist()
+def get_areas_with_images(district):
+    """Returns areas with their images for a given district"""
+    try:
+        if not district:
+            frappe.throw(_("District parameter is required"))
+        
+        areas = frappe.get_all("Area",
+            filters={"district": district},
+            fields=["name", "area"])
+        
+        result = []
+        for area in areas:
+            try:
+                doc = frappe.get_doc("Area", area["name"])
+                images = []
+                if hasattr(doc, 'images'):
+                    images = [{"image": img.image} for img in doc.images if img.image]
+                
+                result.append({
+                    "name": area["name"],
+                    "area": area["area"],
+                    "images": images
+                })
+            except Exception as e:
+                frappe.log_error(f"Error processing area {area['name']}: {str(e)}")
+                continue
+        
+        return result
+        
+    except Exception as e:
+        frappe.log_error(f"Error in get_areas_with_images: {str(e)}")
+        frappe.throw(_("Failed to fetch areas. Please try again later."))
