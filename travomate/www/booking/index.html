@@ -12,6 +12,7 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <style>
+      /* Your existing CSS styles remain unchanged */
       .guide-details {
         border: 1px solid #ddd;
         border-radius: 8px;
@@ -246,7 +247,6 @@
                     <button type="submit" class="btn btn-primary w-100">Submit Booking Request</button>
                   </form>
                  <!-- Simple Success Popup -->
-<!-- Simple Success Popup -->
 <div id="simple-success-popup" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
   <div class="bg-white rounded-lg p-6 w-full max-w-sm">
       <div class="text-center">
@@ -556,158 +556,166 @@
           return travelers;
       }
       
-   // Handle Booking Form Submission
-// Handle Booking Form Submission
-document.getElementById("bookingForm").addEventListener("submit", async function(e) {
-    e.preventDefault();
-    
-    // Show loading state
-    const submitBtn = document.querySelector("#bookingForm button[type='submit']");
-    const originalBtnText = submitBtn.innerHTML;
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-    
-    try {
-        // Validate form first
-        if (!validateBookingForm()) {
-            throw new Error("Please fix the form errors");
-        }
+      // Handle Booking Form Submission - UPDATED VERSION
+      document.getElementById("bookingForm").addEventListener("submit", async function(e) {
+          e.preventDefault();
+          
+          // Show loading state
+          const submitBtn = document.querySelector("#bookingForm button[type='submit']");
+          const originalBtnText = submitBtn.innerHTML;
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+          
+          try {
+              // Validate form first
+              if (!validateBookingForm()) {
+                  throw new Error("Please fix the form errors");
+              }
 
-        // Get form values
-        const guideId = document.getElementById("guide").value;
-        const startDate = document.getElementById("startDate").value;
-        const endDate = document.getElementById("endDate").value;
-        const numTravelers = parseInt(document.getElementById("numTravelers").value);
-        const notes = document.getElementById("notes").value;
-        const fellowTravelers = getFellowTravelersData();
-        
-        // Get district and area from selected guide
-        const guideDropdown = document.getElementById("guide");
-        const selectedOption = guideDropdown.options[guideDropdown.selectedIndex];
-        const district = selectedOption?.dataset.district;
-        const area = selectedOption?.dataset.area;
+              // Get form values
+              const guideId = document.getElementById("guide").value;
+              const startDate = document.getElementById("startDate").value;
+              const endDate = document.getElementById("endDate").value;
+              const numTravelers = parseInt(document.getElementById("numTravelers").value);
+              const notes = document.getElementById("notes").value;
+              const fellowTravelers = getFellowTravelersData();
+              
+              // Get district and area from selected guide
+              const guideDropdown = document.getElementById("guide");
+              const selectedOption = guideDropdown.options[guideDropdown.selectedIndex];
+              const district = document.getElementById("district").value;
+              const area = selectedOption?.dataset.area;
 
-        // Get traveler ID
-        const loggedInUser = "{{ frappe.session.user }}";
-        const travelerResponse = await $.ajax({
-            method: "GET",
-            url: "/api/method/travomate.custom_app.get_traveler_for_user",
-            headers: {
-                "X-Frappe-CSRF-Token": $('meta[name="csrf-token"]').attr("content"),
-            },
-            data: { user: loggedInUser }
-        });
+              // Validate we have all required data
+              if (!district || !area) {
+                  throw new Error("Please select both district and area");
+              }
 
-        if (!travelerResponse.message || travelerResponse.message.status !== "success") {
-            throw new Error("Unable to verify traveler account. Please complete your traveler profile.");
-        }
+              // Get traveler ID
+              const loggedInUser = "{{ frappe.session.user }}";
+              const travelerResponse = await $.ajax({
+                  method: "GET",
+                  url: "/api/method/travomate.custom_app.get_traveler_for_user",
+                  headers: {
+                      "X-Frappe-CSRF-Token": $('meta[name="csrf-token"]').attr("content"),
+                  },
+                  data: { user: loggedInUser }
+              });
 
-        // Prepare booking data
-        const bookingData = {
-            traveler: travelerResponse.message.traveler,
-            guide: guideId,
-            start_date: startDate,
-            end_date: endDate,
-            num_travelers: numTravelers,
-            notes: notes || "",
-            district: district,
-            area: area,
-            fellow_travelers: JSON.stringify(fellowTravelers)
-        };
+              if (!travelerResponse.message || travelerResponse.message.status !== "success") {
+                  throw new Error("Unable to verify traveler account. Please complete your traveler profile.");
+              }
 
-        // Submit booking request
-        const response = await $.ajax({
-            method: "POST",
-            url: "/api/method/travomate.custom_app.create_booking",
-            headers: {
-                "X-Frappe-CSRF-Token": $('meta[name="csrf-token"]').attr("content"),
-                "Content-Type": "application/json"
-            },
-            data: JSON.stringify(bookingData)
-        }).catch(error => {
-            // Handle AJAX errors specifically
-            const errorMessage = error.responseJSON?.message?.message || 
-                               error.responseJSON?.message || 
-                               error.statusText || 
-                               "Booking request failed. Please try again.";
-            throw new Error(errorMessage);
-        });
+              // Prepare booking data
+              const bookingData = {
+                  traveler: travelerResponse.message.traveler,
+                  guide: guideId,
+                  start_date: startDate,
+                  end_date: endDate,
+                  num_travelers: numTravelers,
+                  notes: notes || "",
+                  district: district,
+                  area: area,
+                  fellow_travelers: JSON.stringify(fellowTravelers)
+              };
 
-        if (response.message && response.message.status === "success") {
-            // Show simple success popup
-            showSimpleSuccessPopup();
-            // Reset form
-            resetForm();
-        } else {
-            const errorMsg = response.message?.message || "Booking request failed";
-            throw new Error(errorMsg);
-        }
+              // Log the data being sent for debugging
+              console.log("Submitting booking with data:", bookingData);
 
-    } catch (error) {
-        console.error("Booking error:", error);
-        
-        // Handle different error types
-        let errorMessage = "Booking request failed. Please try again.";
-        if (error instanceof Error) {
-            errorMessage = error.message;
-        } else if (typeof error === 'string') {
-            errorMessage = error;
-        } else if (error?.message) {
-            errorMessage = error.message;
-        }
-        
-        showToast(errorMessage, "error");
-        
-        // If it's a validation error, scroll to the first error
-        if (error.message && error.message.includes("form errors")) {
-            const firstError = document.querySelector('.is-invalid');
-            if (firstError) {
-                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-        }
-    } finally {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = originalBtnText;
-    }
-});
+              // Submit booking request
+              const response = await $.ajax({
+                  method: "POST",
+                  url: "/api/method/travomate.custom_app.create_booking",
+                  headers: {
+                      "X-Frappe-CSRF-Token": $('meta[name="csrf-token"]').attr("content"),
+                      "Content-Type": "application/json"
+                  },
+                  data: JSON.stringify(bookingData)
+              }).catch(error => {
+                  // Handle AJAX errors specifically
+                  const errorMessage = error.responseJSON?.message?.message || 
+                                     error.responseJSON?.message || 
+                                     error.statusText || 
+                                     "Booking request failed. Please try again.";
+                  throw new Error(errorMessage);
+              });
 
-// Function to show simple success popup
-function showSimpleSuccessPopup() {
-    // Remove any existing popup first
-    const existingPopup = document.getElementById('simple-success-popup');
-    if (existingPopup) {
-        existingPopup.remove();
-    }
+              if (response.message && response.message.status === "success") {
+                  // Show simple success popup
+                  showSimpleSuccessPopup();
+                  // Reset form
+                  resetForm();
+              } else {
+                  const errorMsg = response.message?.message || "Booking request failed";
+                  throw new Error(errorMsg);
+              }
 
-    // Create new popup
-    const popupHTML = `
-    <div id="simple-success-popup" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg p-6 w-full max-w-sm">
-            <div class="text-center">
-                <div class="text-green-500 text-5xl mb-3">
-                    <i class="fas fa-check-circle"></i>
-                </div>
-                <h3 class="text-xl font-bold mb-2">Booking Successful!</h3>
-                <p class="text-gray-600 mb-4">Your booking request has been submitted.</p>
-                <button id="close-success-popup-btn" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-                    Go to Dashboard
-                </button>
-            </div>
-        </div>
-    </div>
-    `;
-    document.body.insertAdjacentHTML('beforeend', popupHTML);
-    
-    // Add event listener for close button
-    document.getElementById('close-success-popup-btn').addEventListener('click', function() {
-        // Ensure navigation happens
-        window.location.href = "/traveler_dash";
-        return false;
-    });
-    
-    // Show the popup
-    document.getElementById('simple-success-popup').classList.remove('hidden');
-}
+          } catch (error) {
+              console.error("Booking error:", error);
+              
+              // Handle different error types
+              let errorMessage = "Booking request failed. Please try again.";
+              if (error instanceof Error) {
+                  errorMessage = error.message;
+              } else if (typeof error === 'string') {
+                  errorMessage = error;
+              } else if (error?.message) {
+                  errorMessage = error.message;
+              }
+              
+              showToast(errorMessage, "error");
+              
+              // If it's a validation error, scroll to the first error
+              if (error.message && error.message.includes("form errors")) {
+                  const firstError = document.querySelector('.is-invalid');
+                  if (firstError) {
+                      firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }
+              }
+          } finally {
+              submitBtn.disabled = false;
+              submitBtn.innerHTML = originalBtnText;
+          }
+      });
+
+      // Function to show simple success popup
+      function showSimpleSuccessPopup() {
+          // Remove any existing popup first
+          const existingPopup = document.getElementById('simple-success-popup');
+          if (existingPopup) {
+              existingPopup.remove();
+          }
+
+          // Create new popup
+          const popupHTML = `
+          <div id="simple-success-popup" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div class="bg-white rounded-lg p-6 w-full max-w-sm">
+                  <div class="text-center">
+                      <div class="text-green-500 text-5xl mb-3">
+                          <i class="fas fa-check-circle"></i>
+                      </div>
+                      <h3 class="text-xl font-bold mb-2">Booking Successful!</h3>
+                      <p class="text-gray-600 mb-4">Your booking request has been submitted.</p>
+                      <button id="close-success-popup-btn" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                          Go to Dashboard
+                      </button>
+                  </div>
+              </div>
+          </div>
+          `;
+          document.body.insertAdjacentHTML('beforeend', popupHTML);
+          
+          // Add event listener for close button
+          document.getElementById('close-success-popup-btn').addEventListener('click', function() {
+              // Ensure navigation happens
+              window.location.href = "/traveler_dash";
+              return false;
+          });
+          
+          // Show the popup
+          document.getElementById('simple-success-popup').classList.remove('hidden');
+      }
+
       // Enhanced form validation function
       function validateBookingForm() {
           let isValid = true;
@@ -725,11 +733,21 @@ function showSimpleSuccessPopup() {
           const guideId = document.getElementById("guide").value;
           const guideDropdown = document.getElementById("guide");
           const selectedOption = guideDropdown.options[guideDropdown.selectedIndex];
-          const district = selectedOption?.dataset.district;
+          const district = document.getElementById("district").value;
           const area = selectedOption?.dataset.area;
           
-          if (!guideId || !district || !area) {
+          if (!guideId) {
               markFieldInvalid(document.getElementById("guide"), "Please select a guide");
+              isValid = false;
+          }
+
+          if (!district) {
+              markFieldInvalid(document.getElementById("district"), "Please select a district");
+              isValid = false;
+          }
+
+          if (!area) {
+              markFieldInvalid(document.getElementById("guide"), "Selected guide doesn't have an area specified");
               isValid = false;
           }
 

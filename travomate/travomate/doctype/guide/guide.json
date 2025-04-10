@@ -13,6 +13,7 @@
   "phone",
   "gender",
   "date_of_birth",
+  "status",
   "column_break_goen",
   "address",
   "nationality",
@@ -135,11 +136,17 @@
    "fieldtype": "Table",
    "label": "Travel Zones",
    "options": "TZ Areas"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Pending\nConfirmed\nCancelled\nCompleted"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-04-08 23:38:13.617496",
+ "modified": "2025-04-10 01:52:05.347324",
  "modified_by": "Administrator",
  "module": "Travomate",
  "name": "Guide",

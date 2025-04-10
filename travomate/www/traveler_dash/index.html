@@ -7,6 +7,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="csrf-token" content="{{ frappe.session.csrf_token }}">
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <title>Traveler Dashboard | Travomate</title>
   <link href="assets/css/theme.css" rel="stylesheet" />
@@ -133,15 +134,35 @@
     .area-image-carousel {
       height: 200px;
       background: #f5f5f5;
+      position: relative;
+      overflow: hidden;
     }
+
+    .area-image-carousel .carousel {
+      height: 100%;
+    }
+
+    .area-image-carousel .carousel-inner {
+      height: 100%;
+    }
+
     .area-image-carousel .carousel-item {
-      height: 200px;
+      height: 100%;
+      transition: transform 0.6s ease-in-out;
     }
+
+    .area-image-carousel .carousel-item-start,
+    .area-image-carousel .carousel-item-end {
+      position: absolute;
+      top: 0;
+    }
+
     .area-image-carousel img {
       height: 100%;
       width: 100%;
       object-fit: cover;
     }
+
     .carousel-control-prev, .carousel-control-next {
       background-color: rgba(0,0,0,0.2);
       width: 40px;
@@ -149,6 +170,39 @@
       border-radius: 50%;
       top: 50%;
       transform: translateY(-50%);
+      opacity: 0.8;
+      transition: opacity 0.15s ease;
+    }
+
+    .carousel-control-prev:hover, 
+    .carousel-control-next:hover {
+      opacity: 1;
+    }
+
+    .carousel-indicators {
+      margin-bottom: 5px;
+    }
+
+    .carousel-indicators button {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin: 0 3px;
+      transition: opacity 0.3s ease;
+    }
+
+    @media (max-width: 768px) {
+      .area-image-carousel {
+        height: 150px;
+      }
+    }
+
+    .no-image {
+      color: #666;
+      font-size: 0.9rem;
+      text-align: center;
+      padding: 1rem;
+      width: 100%;
     }
     .area-image-error::after {
       content: "Image not available";
@@ -578,24 +632,59 @@ function showAreas(startIndex, count) {
     
     // Create image container
     const imageContainer = document.createElement("div");
-    imageContainer.className = "area-image-container";
     
     // Check if images exist
-    let imageHtml = '<div class="no-image">No Image Available</div>';
-    if (area.images?.length > 0 && area.images[0].image) {
-      const imageUrl = area.images[0].image.startsWith('http') 
-        ? area.images[0].image 
-        : `/files/${area.images[0].image}`;
-      
-      imageHtml = `
-        <img src="${imageUrl}" 
-             class="area-image"
-             alt="${area.area}"
-             onerror="handleImageError(this)">
-      `;
+    if (area.images?.length > 0) {
+      if (area.images.length === 1) {
+        // Single image case
+        imageContainer.className = "area-image-container";
+        imageContainer.innerHTML = `
+          <img src="${area.images[0].image}" 
+               class="area-image"
+               alt="${area.area}"
+               onerror="handleImageError(this)">
+        `;
+      } else {
+        // Multiple images - create infinite carousel
+        const carouselId = `carousel-${area.name.replace(/\s+/g, '-')}-${i}`;
+        imageContainer.className = "area-image-carousel";
+        imageContainer.innerHTML = `
+          <div id="${carouselId}" class="carousel slide" data-bs-ride="false">
+            <div class="carousel-inner">
+              ${area.images.map((img, index) => `
+                <div class="carousel-item ${index === 0 ? 'active' : ''}">
+                  <img src="${img.image}" 
+                       class="d-block w-100 h-100" 
+                       alt="${area.area} - Image ${index + 1}"
+                       onerror="handleImageError(this)"
+                       style="object-fit: cover;">
+                </div>
+              `).join('')}
+            </div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#${carouselId}" data-bs-slide="prev">
+              <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+              <span class="visually-hidden">Previous</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#${carouselId}" data-bs-slide="next">
+              <span class="carousel-control-next-icon" aria-hidden="true"></span>
+              <span class="visually-hidden">Next</span>
+            </button>
+          </div>
+        `;
+        
+        // Initialize carousel with infinite loop
+        const carouselElement = imageContainer.querySelector('.carousel');
+        new bootstrap.Carousel(carouselElement, {
+          wrap: true,  // Enable infinite looping
+          interval: false,  // Disable auto-cycling
+          touch: true  // Enable touch support for mobile devices
+        });
+      }
+    } else {
+      // No images case
+      imageContainer.className = "area-image-container";
+      imageContainer.innerHTML = '<div class="no-image">No Image Available</div>';
     }
-    
-    imageContainer.innerHTML = imageHtml;
     
     // Create card content
     card.innerHTML = `
@@ -606,7 +695,9 @@ function showAreas(startIndex, count) {
         <div class="col-md-7">
           <div class="card-body">
             <h5 class="card-title">${area.area}</h5>
-            <p class="card-text"><small class="text-muted">${district} District</small></p>
+            <p class="card-text"><small class="text-muted">${area.district_name || area.district || ''} District</small></p>
+            ${area.images?.length > 1 ? 
+              `<p class="text-muted"><small><i class="fas fa-images me-1"></i> ${area.images.length} photos available</small></p>` : ''}
           </div>
         </div>
       </div>
@@ -618,12 +709,28 @@ function showAreas(startIndex, count) {
 
 function handleImageError(img) {
   console.error("Image failed to load:", img.src);
-  img.style.display = 'none';
-  const container = img.parentElement;
-  const errorDiv = document.createElement('div');
-  errorDiv.className = 'no-image';
-  errorDiv.textContent = 'Image not available';
-  container.appendChild(errorDiv);
+  const container = img.closest('.carousel-item') || img.parentElement;
+  
+  if (container.classList.contains('carousel-item')) {
+    // For carousel items
+    container.innerHTML = `
+      <div class="d-flex flex-column align-items-center justify-content-center h-100">
+        <i class="fas fa-image fa-3x text-muted mb-2"></i>
+        <span class="text-muted">Image not available</span>
+      </div>
+    `;
+    container.style.backgroundColor = '#f8f9fa';
+  } else {
+    // For single images
+    img.style.display = 'none';
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'no-image d-flex flex-column align-items-center justify-content-center h-100';
+    errorDiv.innerHTML = `
+      <i class="fas fa-image fa-3x text-muted mb-2"></i>
+      <span class="text-muted">Image not available</span>
+    `;
+    container.appendChild(errorDiv);
+  }
 }
 
 function showError(message) {

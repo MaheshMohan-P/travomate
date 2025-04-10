@@ -783,6 +783,9 @@ def create_booking(**kwargs):
         }
     """
     try:
+        # Log incoming data for debugging
+        frappe.logger().info(f"Booking creation started with data: {kwargs}")
+        
         # Parse the incoming data with strict validation
         booking_data = frappe._dict(kwargs)
         
@@ -808,6 +811,30 @@ def create_booking(**kwargs):
                 "message": " ".join(missing_fields)
             }
 
+        # Validate traveler exists
+        if not frappe.db.exists("Traveler", booking_data.traveler):
+            frappe.response['http_status_code'] = 400
+            return {
+                "status": "error",
+                "message": "Traveler record not found"
+            }
+
+        # Validate guide exists and is active
+        if not frappe.db.exists("Guide", booking_data.guide):
+            frappe.response['http_status_code'] = 400
+            return {
+                "status": "error",
+                "message": "Selected guide does not exist"
+            }
+
+        # guide_status = frappe.db.get_value("Guide", booking_data.guide, "status")
+        # if guide_status != "Active":
+        #     frappe.response['http_status_code'] = 400
+        #     return {
+        #         "status": "error",
+        #         "message": "Selected guide is not active for bookings"
+        #     }
+
         # Get the daily rate from the guide's travel zone for this district
         daily_rate = 0
         try:
@@ -817,7 +844,7 @@ def create_booking(**kwargs):
                     "guide": booking_data.guide,
                     "district": booking_data.district
                 },
-                fields=["daily_rate"],
+                fields=["name", "daily_rate"],
                 limit=1
             )
             
@@ -944,8 +971,8 @@ def create_booking(**kwargs):
                 "guide": booking_data.guide,
                 "start_date": start_date,
                 "end_date": end_date,
-                "daily_rate": daily_rate,  # Add daily rate to booking
-                "total_amount": total_amount,  # Add calculated total amount
+                "daily_rate": daily_rate,
+                "total_amount": total_amount,
                 "num_travelers": booking_data.get('num_travelers', 1),
                 "notes": booking_data.get('notes', ''),
                 "district": booking_data.district,
@@ -993,20 +1020,13 @@ def create_booking(**kwargs):
                 }
             }
 
-        # except frappe.DuplicateEntryError:
-        #     frappe.response['http_status_code'] = 409
-        #     return {
-        #         "status": "error",
-        #         "message": "This booking already exists"
-        #     }
-            
         except Exception as e:
             frappe.db.rollback()
             frappe.log_error(frappe.get_traceback(), "Booking Creation Failed")
             frappe.response['http_status_code'] = 500
             return {
                 "status": "error",
-                "message": "Failed to create booking. Please try again."
+                "message": str(e)  # Return the actual error message
             }
 
     except Exception as e:
@@ -1014,7 +1034,7 @@ def create_booking(**kwargs):
         frappe.log_error(frappe.get_traceback(), "Booking API Error")
         return {
             "status": "error",
-            "message": "An unexpected error occurred. Please try again later."
+            "message": str(e)  # Return the actual error message
         }
 
 def send_booking_notification(booking):
@@ -1840,31 +1860,42 @@ def get_traveler_reviews(traveler_email):
 
 @frappe.whitelist()
 def get_areas_with_images(district):
-    """Returns areas with their images for a given district"""
+    """Get areas with their images from the child table"""
     try:
-        if not district:
-            frappe.throw(_("District parameter is required"))
+        # Get areas with district name
+        areas = frappe.db.sql("""
+            SELECT a.name, a.area, a.district, d.name as district_name 
+            FROM `tabArea` a
+            JOIN `tabDistrict` d ON a.district = d.name
+            WHERE a.district = %s
+        """, (district), as_dict=1)
         
-        areas = frappe.get_all("Area",
-            filters={"district": district},
-            fields=["name", "area"])
-        
+        # Get images for each area
         result = []
         for area in areas:
-            try:
-                doc = frappe.get_doc("Area", area["name"])
-                images = []
-                if hasattr(doc, 'images'):
-                    images = [{"image": img.image} for img in doc.images if img.image]
-                
-                result.append({
-                    "name": area["name"],
-                    "area": area["area"],
-                    "images": images
-                })
-            except Exception as e:
-                frappe.log_error(f"Error processing area {area['name']}: {str(e)}")
-                continue
+            images = frappe.db.sql("""
+                SELECT images 
+                FROM `tabImages`
+                WHERE parenttype = 'Area' AND parent = %s
+                ORDER BY idx
+            """, (area.name), as_dict=1)
+            
+            # Convert file URLs to absolute paths if needed
+            processed_images = []
+            for img in images:
+                if img.images:  # Check if image exists
+                    image_url = img.images
+                    if not image_url.startswith(('http', '/')):
+                        image_url = '/files/' + image_url
+                    processed_images.append({"image": image_url})
+            
+            result.append({
+                "name": area.name,
+                "area": area.area,
+                "district": area.district,
+                "district_name": area.district_name,
+                "images": processed_images
+            })
         
         return result
         
