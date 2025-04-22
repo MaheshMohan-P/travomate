@@ -120,20 +120,16 @@
           font-size: 0.875em;
           color: #dc3545;
       }
-
-      /* Booking Success Modal Styles */
-.booking-success-details {
-    font-size: 1.1rem;
-}
-
-.booking-success-details p {
-    margin-bottom: 0.8rem;
-}
-
-#bookingStatus {
-    font-size: 0.9em;
-    padding: 0.35em 0.65em;
-}
+      .booking-success-details {
+          font-size: 1.1rem;
+      }
+      .booking-success-details p {
+          margin-bottom: 0.8rem;
+      }
+      #bookingStatus {
+          font-size: 0.9em;
+          padding: 0.35em 0.65em;
+      }
     </style>
   </head>
 
@@ -191,7 +187,7 @@
                 <p><strong>Experience:</strong> <span id="guideExperience"></span></p>
                 <p><strong>Daily Rate:</strong> <span id="guidePricing"></span></p>
                 <button class="wishlist-btn" id="addToWishlistBtn">Add to Wishlist</button>
-            </div>
+              </div>
 
               <!-- Booking Form -->
               <div class="card mt-4">
@@ -212,7 +208,8 @@
                     </div>
                     <div class="mb-3">
                       <label for="numTravelers" class="form-label">Number of Travelers</label>
-                      <input type="number" class="form-control" id="numTravelers" min="1" value="1" required>
+                      <input type="number" class="form-control" id="numTravelers" min="0" value="0" required>
+                      <div class="invalid-feedback">Please enter a valid number of travelers</div>
                     </div>
                     
                     <!-- Fellow Travelers Section -->
@@ -247,20 +244,20 @@
                     <button type="submit" class="btn btn-primary w-100">Submit Booking Request</button>
                   </form>
                  <!-- Simple Success Popup -->
-<div id="simple-success-popup" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
-  <div class="bg-white rounded-lg p-6 w-full max-w-sm">
-      <div class="text-center">
-          <div class="text-green-500 text-5xl mb-3">
-              <i class="fas fa-check-circle"></i>
-          </div>
-          <h3 class="text-xl font-bold mb-2">Booking Successful!</h3>
-          <p class="text-gray-600 mb-4">Your booking request has been submitted.</p>
-          <button id="close-success-popup-btn" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-              Close
-          </button>
-      </div>
-  </div>
-</div>
+                 <div id="simple-success-popup" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+                  <div class="bg-white rounded-lg p-6 w-full max-w-sm">
+                      <div class="text-center">
+                          <div class="text-green-500 text-5xl mb-3">
+                              <i class="fas fa-check-circle"></i>
+                          </div>
+                          <h3 class="text-xl font-bold mb-2">Booking Successful!</h3>
+                          <p class="text-gray-600 mb-4">Your booking request has been submitted.</p>
+                          <button id="close-success-popup-btn" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                              Close
+                          </button>
+                      </div>
+                  </div>
+                </div>
                 </div>
               </div>
             </div>
@@ -268,15 +265,18 @@
         </div>
       </section>
     </main>
+
     <script>
       // Initialize variables
       let wishlist = [];
       let currentSelectedGuide = null;
+      let areasFetched = false;
     
       // Clear all form fields on page load
       window.onload = function() {
         resetForm();
         verifyTravelerAccess();
+        setupEventListeners();
       };
     
       function resetForm() {
@@ -286,8 +286,8 @@
         document.getElementById("guideDetails").classList.add("hidden");
         document.getElementById("guide").disabled = true;
         currentSelectedGuide = null;
-        // Clear fellow travelers table
         document.querySelector('#fellowTravelersTable tbody').innerHTML = '';
+        document.getElementById("numTravelers").value = "0";
       }
     
       // Verify traveler access
@@ -328,10 +328,9 @@
         });
       }
     
-      // Fetch Guides by District for Booking - Modified to preserve selection
+      // Fetch Guides by District for Booking
       async function fetchGuidesByDistrictBooking(district, startDate, endDate) {
         try {
-          // Store current selection before refreshing
           const guideDropdown = document.getElementById("guide");
           const currentValue = guideDropdown.value;
           
@@ -369,10 +368,8 @@
               guideDropdown.appendChild(option);
             });
             
-            // Restore previous selection if it still exists
             if (currentValue && [...guideDropdown.options].some(opt => opt.value === currentValue)) {
               guideDropdown.value = currentValue;
-              // Trigger change event to reload details if guide is still selected
               if (currentValue === currentSelectedGuide) {
                 guideDropdown.dispatchEvent(new Event('change'));
               }
@@ -391,7 +388,7 @@
       // Fetch Guide Details
       async function fetchGuideDetails(guideId, district) {
         try {
-            currentSelectedGuide = guideId; // Store the currently selected guide
+            currentSelectedGuide = guideId;
             
             const response = await $.ajax({
                 method: "GET",
@@ -408,7 +405,6 @@
                   ? guide.travel_zones
                       .filter(tz => tz.district === district)
                       .flatMap(tz => {
-                          // Find the daily rate for this district
                           const dailyRate = tz.daily_rate ? `₹${tz.daily_rate}/day` : "Not specified";
                           return {
                               area: tz.areas.map(a => a.area),
@@ -425,13 +421,11 @@
                 document.getElementById("guideAreas").textContent = filteredAreas.flatMap(a => a.area).join(", ") || "Not specified";
                 document.getElementById("guideExperience").textContent = guide.experience ? `${guide.experience} years` : "Not specified";
                 
-                // Display daily rate (use the first one found for this district)
                 const dailyRate = filteredAreas.length > 0 ? filteredAreas[0].daily_rate : "Not specified";
                 document.getElementById("guidePricing").textContent = dailyRate;
                 
                 document.getElementById("guideDetails").classList.remove("hidden");
                 
-                // Update the selected guide option with area data
                 const guideDropdown = document.getElementById("guide");
                 const selectedOption = guideDropdown.options[guideDropdown.selectedIndex];
                 if (selectedOption) {
@@ -445,39 +439,6 @@
         }
       }
       
-      async function getTravelerForUser(user) {
-          try {
-              // Basic validation
-              if (!user || user === "Guest") {
-                  showToast("Please log in as a traveler to book guides", "error");
-                  setTimeout(() => window.location.href = "/login", 2000);
-                  throw new Error("Unauthenticated user");
-              }
-
-              const response = await $.ajax({
-                  method: "GET",
-                  url: "/api/method/travomate.custom_app.get_traveler_for_user",
-                  headers: {
-                      "X-Frappe-CSRF-Token": $('meta[name="csrf-token"]').attr("content"),
-                  },
-                  data: { user: user }
-              });
-
-              // Handle API response
-              if (response.message.status === "success") {
-                  return response.message.traveler; // Return traveler ID
-              } else {
-                  // Traveler exists but profile might be incomplete
-                  showToast("Please complete your traveler profile first", "error");
-                  setTimeout(() => window.location.href = "/profile", 2000);
-                  throw new Error(response.message.message || "Traveler profile issue");
-              }
-          } catch (error) {
-              console.error("Traveler verification failed:", error);
-              throw error; // Re-throw to stop booking process
-          }
-      }
-    
       // Add to Wishlist
       document.getElementById("addToWishlistBtn").addEventListener("click", () => {
         const guideId = document.getElementById("guide").value;
@@ -506,6 +467,19 @@
       
       // Fellow Travelers Table Management
       document.getElementById('addTravelerBtn').addEventListener('click', function() {
+          const numTravelers = parseInt(document.getElementById("numTravelers").value) || 0;
+          const currentCount = document.querySelectorAll('#fellowTravelersTable tbody tr').length;
+          
+          if (numTravelers === 0) {
+              showToast("Please set number of travelers first", "error");
+              return;
+          }
+          
+          if (currentCount >= numTravelers) {
+              showToast(`Cannot add more than ${numTravelers} travelers`, "error");
+              return;
+          }
+          
           const tableBody = document.querySelector('#fellowTravelersTable tbody');
           const newRow = document.createElement('tr');
           newRow.innerHTML = `
@@ -532,12 +506,21 @@
               <td><button type="button" class="btn btn-sm btn-danger remove-traveler"><i class="fas fa-times"></i></button></td>
           `;
           tableBody.appendChild(newRow);
+          
+          // Clear any validation errors
+          document.getElementById("numTravelers").classList.remove('is-invalid');
+          const feedback = document.getElementById("numTravelers").nextElementSibling;
+          if (feedback && feedback.classList.contains('invalid-feedback')) {
+              feedback.textContent = "Please enter a valid number of travelers";
+          }
       });
 
       // Remove row handler
       document.addEventListener('click', function(e) {
           if (e.target.classList.contains('remove-traveler')) {
               e.target.closest('tr').remove();
+              // Trigger validation update
+              document.getElementById("numTravelers").dispatchEvent(new Event('input'));
           }
       });
 
@@ -556,7 +539,7 @@
           return travelers;
       }
       
-      // Handle Booking Form Submission - UPDATED VERSION
+      // Handle Booking Form Submission
       document.getElementById("bookingForm").addEventListener("submit", async function(e) {
           e.preventDefault();
           
@@ -619,9 +602,6 @@
                   fellow_travelers: JSON.stringify(fellowTravelers)
               };
 
-              // Log the data being sent for debugging
-              console.log("Submitting booking with data:", bookingData);
-
               // Submit booking request
               const response = await $.ajax({
                   method: "POST",
@@ -632,7 +612,6 @@
                   },
                   data: JSON.stringify(bookingData)
               }).catch(error => {
-                  // Handle AJAX errors specifically
                   const errorMessage = error.responseJSON?.message?.message || 
                                      error.responseJSON?.message || 
                                      error.statusText || 
@@ -641,9 +620,7 @@
               });
 
               if (response.message && response.message.status === "success") {
-                  // Show simple success popup
                   showSimpleSuccessPopup();
-                  // Reset form
                   resetForm();
               } else {
                   const errorMsg = response.message?.message || "Booking request failed";
@@ -652,26 +629,7 @@
 
           } catch (error) {
               console.error("Booking error:", error);
-              
-              // Handle different error types
-              let errorMessage = "Booking request failed. Please try again.";
-              if (error instanceof Error) {
-                  errorMessage = error.message;
-              } else if (typeof error === 'string') {
-                  errorMessage = error;
-              } else if (error?.message) {
-                  errorMessage = error.message;
-              }
-              
-              showToast(errorMessage, "error");
-              
-              // If it's a validation error, scroll to the first error
-              if (error.message && error.message.includes("form errors")) {
-                  const firstError = document.querySelector('.is-invalid');
-                  if (firstError) {
-                      firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  }
-              }
+              showToast(error.message, "error");
           } finally {
               submitBtn.disabled = false;
               submitBtn.innerHTML = originalBtnText;
@@ -680,40 +638,13 @@
 
       // Function to show simple success popup
       function showSimpleSuccessPopup() {
-          // Remove any existing popup first
-          const existingPopup = document.getElementById('simple-success-popup');
-          if (existingPopup) {
-              existingPopup.remove();
-          }
-
-          // Create new popup
-          const popupHTML = `
-          <div id="simple-success-popup" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div class="bg-white rounded-lg p-6 w-full max-w-sm">
-                  <div class="text-center">
-                      <div class="text-green-500 text-5xl mb-3">
-                          <i class="fas fa-check-circle"></i>
-                      </div>
-                      <h3 class="text-xl font-bold mb-2">Booking Successful!</h3>
-                      <p class="text-gray-600 mb-4">Your booking request has been submitted.</p>
-                      <button id="close-success-popup-btn" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-                          Go to Dashboard
-                      </button>
-                  </div>
-              </div>
-          </div>
-          `;
-          document.body.insertAdjacentHTML('beforeend', popupHTML);
+          const popup = document.getElementById('simple-success-popup');
+          popup.classList.remove('hidden');
           
-          // Add event listener for close button
           document.getElementById('close-success-popup-btn').addEventListener('click', function() {
-              // Ensure navigation happens
+              popup.classList.add('hidden');
               window.location.href = "/traveler_dash";
-              return false;
           });
-          
-          // Show the popup
-          document.getElementById('simple-success-popup').classList.remove('hidden');
       }
 
       // Enhanced form validation function
@@ -729,42 +660,27 @@
               }
           });
 
-          // Validate guide selection
-          const guideId = document.getElementById("guide").value;
-          const guideDropdown = document.getElementById("guide");
-          const selectedOption = guideDropdown.options[guideDropdown.selectedIndex];
-          const district = document.getElementById("district").value;
-          const area = selectedOption?.dataset.area;
-          
-          if (!guideId) {
-              markFieldInvalid(document.getElementById("guide"), "Please select a guide");
-              isValid = false;
-          }
+          // Basic field validations
+          const requiredFields = [
+              { id: "district", message: "Please select a district" },
+              { id: "guide", message: "Please select a guide" },
+              { id: "startDate", message: "Please select a start date" },
+              { id: "endDate", message: "Please select an end date" },
+              { id: "numTravelers", message: "Please enter number of travelers" }
+          ];
 
-          if (!district) {
-              markFieldInvalid(document.getElementById("district"), "Please select a district");
-              isValid = false;
-          }
+          requiredFields.forEach(field => {
+              const element = document.getElementById(field.id);
+              if (!element.value) {
+                  markFieldInvalid(element, field.message);
+                  isValid = false;
+              }
+          });
 
-          if (!area) {
-              markFieldInvalid(document.getElementById("guide"), "Selected guide doesn't have an area specified");
-              isValid = false;
-          }
-
-          // Validate dates
+          // Date validations
           const startDate = document.getElementById("startDate").value;
           const endDate = document.getElementById("endDate").value;
           
-          if (!startDate) {
-              markFieldInvalid(document.getElementById("startDate"), "Please select a start date");
-              isValid = false;
-          }
-
-          if (!endDate) {
-              markFieldInvalid(document.getElementById("endDate"), "Please select an end date");
-              isValid = false;
-          }
-
           if (startDate && endDate) {
               const start = new Date(startDate);
               const end = new Date(endDate);
@@ -783,47 +699,44 @@
               }
           }
 
-          // Validate number of travelers
+          // Travelers validation
           const numTravelers = parseInt(document.getElementById("numTravelers").value);
-          if (isNaN(numTravelers) || numTravelers < 1) {
-              markFieldInvalid(document.getElementById("numTravelers"), "Please enter a valid number of travelers");
+          const fellowTravelers = getFellowTravelersData();
+          
+          if (isNaN(numTravelers)) {
+              markFieldInvalid(document.getElementById("numTravelers"), "Please enter a valid number");
+              isValid = false;
+          } else if (numTravelers < 1) {
+              markFieldInvalid(document.getElementById("numTravelers"), "At least 1 traveler required");
+              isValid = false;
+          } else if (numTravelers !== fellowTravelers.length) {
+              markFieldInvalid(document.getElementById("numTravelers"), 
+                  `Number of travelers (${numTravelers}) should match ${fellowTravelers.length} fellow travelers added`);
               isValid = false;
           }
 
-          // Validate fellow travelers
-          const fellowTravelers = getFellowTravelersData();
-          if (fellowTravelers.length === 0) {
-              markFieldInvalid(document.getElementById("addTravelerBtn"), "Please add at least one fellow traveler");
+          // Fellow travelers validation
+          if (numTravelers > 0 && fellowTravelers.length === 0) {
+              markFieldInvalid(document.getElementById("addTravelerBtn"), "Please add fellow travelers");
               isValid = false;
           } else {
-              // Validate each fellow traveler
-              document.querySelectorAll('#fellowTravelersTable tbody tr').forEach((row, index) => {
-                  const fullName = row.querySelector('[name="fellow_full_name"]').value.trim();
-                  const age = row.querySelector('[name="fellow_age"]').value;
-                  const gender = row.querySelector('[name="fellow_gender"]').value;
-                  
-                  if (!fullName) {
+              fellowTravelers.forEach((traveler, index) => {
+                  if (!traveler.full_name) {
+                      const row = document.querySelectorAll('#fellowTravelersTable tbody tr')[index];
                       markFieldInvalid(row.querySelector('[name="fellow_full_name"]'), "Full name is required");
                       isValid = false;
                   }
-                  
-                  if (!age || isNaN(age) || age < 1) {
-                      markFieldInvalid(row.querySelector('[name="fellow_age"]'), "Please enter a valid age");
+                  if (!traveler.age || isNaN(traveler.age)) {
+                      const row = document.querySelectorAll('#fellowTravelersTable tbody tr')[index];
+                      markFieldInvalid(row.querySelector('[name="fellow_age"]'), "Please enter valid age");
                       isValid = false;
                   }
-                  
-                  if (!gender) {
+                  if (!traveler.gender) {
+                      const row = document.querySelectorAll('#fellowTravelersTable tbody tr')[index];
                       markFieldInvalid(row.querySelector('[name="fellow_gender"]'), "Please select gender");
                       isValid = false;
                   }
               });
-          }
-
-          // Validate traveler count matches fellow travelers
-          if (numTravelers !== fellowTravelers.length) {
-              markFieldInvalid(document.getElementById("numTravelers"), 
-                  `Number of travelers (${numTravelers}) should match ${fellowTravelers.length} fellow travelers added`);
-              isValid = false;
           }
 
           return isValid;
@@ -831,82 +744,78 @@
 
       // Helper function to mark fields invalid
       function markFieldInvalid(element, message) {
+          if (!element) return;
+          
           element.classList.add('is-invalid');
           const feedback = document.createElement('div');
           feedback.className = 'invalid-feedback';
           feedback.textContent = message;
           element.parentNode.appendChild(feedback);
-          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-
-      // Helper function to get date value
-      function getDateValue(dateString) {
-          return new Date(dateString).getTime();
-      }
-
-      // Add real-time validation for number of travelers
-      document.getElementById("numTravelers").addEventListener("input", function() {
-          const numTravelers = parseInt(this.value) || 0;
-          const fellowTravelersCount = document.querySelectorAll('#fellowTravelersTable tbody tr').length;
           
-          if (numTravelers !== fellowTravelersCount) {
-              markFieldInvalid(this, `Number should match fellow travelers count (${fellowTravelersCount})`);
-          } else {
-              this.classList.remove('is-invalid');
-              const feedback = this.nextElementSibling;
-              if (feedback && feedback.classList.contains('invalid-feedback')) {
-                  feedback.remove();
+          // Only scroll if this is the first error
+          if (!document.querySelector('.is-invalid:not(:first-child)')) {
+              element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+      }
+
+      // Setup all event listeners
+      function setupEventListeners() {
+          // Real-time validation for number of travelers
+          document.getElementById("numTravelers").addEventListener("input", function() {
+              const numTravelers = parseInt(this.value) || 0;
+              const fellowTravelersCount = document.querySelectorAll('#fellowTravelersTable tbody tr').length;
+              
+              if (numTravelers > 0 && numTravelers !== fellowTravelersCount) {
+                  markFieldInvalid(this, `Number should match fellow travelers count (${fellowTravelersCount})`);
+              } else {
+                  this.classList.remove('is-invalid');
+                  const feedback = this.nextElementSibling;
+                  if (feedback && feedback.classList.contains('invalid-feedback')) {
+                      feedback.textContent = "Please enter a valid number of travelers";
+                  }
               }
-          }
-      });      
-      
-      // Handle District Selection
-      document.getElementById("district").addEventListener("change", function() {
-          const district = this.value;
-          const startDate = document.getElementById("startDate").value;
-          const endDate = document.getElementById("endDate").value;
+          });
+
+          // District selection handler
+          document.getElementById("district").addEventListener("change", function() {
+              const district = this.value;
+              if (district) {
+                  fetchGuidesByDistrictBooking(
+                      district,
+                      document.getElementById("startDate").value,
+                      document.getElementById("endDate").value
+                  );
+              } else {
+                  resetForm();
+              }
+          });
           
-          if (district) {
-            fetchGuidesByDistrictBooking(district, startDate, endDate);
-          } else {
-            resetForm();
-          }
-      });
-      
-      // Handle Guide Selection
-      document.getElementById("guide").addEventListener("change", function() {
-          const guideId = this.value;
-          const district = document.getElementById("district").value;
+          // Guide selection handler
+          document.getElementById("guide").addEventListener("change", function() {
+              const guideId = this.value;
+              const district = document.getElementById("district").value;
+              if (guideId && district) {
+                  fetchGuideDetails(guideId, district);
+              } else {
+                  document.getElementById("guideDetails").classList.add("hidden");
+              }
+          });
+
+          // Date change handler
+          const handleDateChange = () => {
+              const district = document.getElementById("district").value;
+              if (district) {
+                  fetchGuidesByDistrictBooking(
+                      district,
+                      document.getElementById("startDate").value,
+                      document.getElementById("endDate").value
+                  );
+              }
+          };
           
-          if (guideId && district) {
-            fetchGuideDetails(guideId, district);
-          } else {
-            document.getElementById("guideDetails").classList.add("hidden");
-          }
-      });
-    
-      // Handle date changes to refresh guide availability while preserving selection
-      document.getElementById("startDate").addEventListener("change", function() {
-          const district = document.getElementById("district").value;
-          if (district) {
-            fetchGuidesByDistrictBooking(
-              district, 
-              this.value, 
-              document.getElementById("endDate").value
-            );
-          }
-      });
-    
-      document.getElementById("endDate").addEventListener("change", function() {
-          const district = document.getElementById("district").value;
-          if (district) {
-            fetchGuidesByDistrictBooking(
-              district, 
-              document.getElementById("startDate").value,
-              this.value
-            );
-          }
-      });
+          document.getElementById("startDate").addEventListener("change", handleDateChange);
+          document.getElementById("endDate").addEventListener("change", handleDateChange);
+      }
     </script>
   </body>
 </html>

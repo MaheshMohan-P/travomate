@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        .logo {
+            height: 50px;
+            margin-bottom: 10px;
+        }
+        .report-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .report-period {
+            font-size: 14px;
+            color: #666;
+        }
+        .section {
+            margin-bottom: 20px;
+            page-break-inside: avoid;
+        }
+        .section-title {
+            font-weight: bold;
+            font-size: 14px;
+            background-color: #f5f5f5;
+            padding: 5px 10px;
+            margin-bottom: 10px;
+            border-left: 3px solid #4e73df;
+        }
+        .summary-cards {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .summary-card {
+            width: 23%;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        .card-title {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        .card-value {
+            font-size: 16px;
+            font-weight: bold;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+        th {
+            background-color: #f5f5f5;
+            text-align: left;
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+        }
+        td {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 10px;
+            color: #999;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+        }
+        .stars {
+            color: #ffc107;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        {% if logo %}
+        <img src="{{ logo }}" class="logo" alt="Travomate Logo">
+        {% endif %}
+        <div class="report-title">Travomate {{ report_period }} Report</div>
+        <div class="report-period">
+            {% if from_date and to_date %}
+                {{ from_date }} to {{ to_date }}
+            {% else %}
+                {{ generated_on }}
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">Guide Information</div>
+        <div><strong>Guide Name:</strong> {{ guide_name }}</div>
+        <div><strong>Report Generated On:</strong> {{ generated_on }}</div>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">Performance Summary</div>
+        <div class="summary-cards">
+            <div class="summary-card">
+                <div class="card-title">Total Earnings</div>
+                <div class="card-value">{{ total_earnings }}</div>
+            </div>
+            <div class="summary-card">
+                <div class="card-title">Completed Bookings</div>
+                <div class="card-value">{{ completed_bookings }}</div>
+            </div>
+            <div class="summary-card">
+                <div class="card-title">Average Rating</div>
+                <div class="card-value">
+                    {{ average_rating }}
+                    <span class="stars">
+                        {% for i in range(1, 6) %}
+                            {% if i <= average_rating|float|round(0, 'floor') %}
+                                ★
+                            {% elif i == average_rating|float|round(0, 'ceil') and average_rating|float % 1 >= 0.5 %}
+                                ½
+                            {% else %}
+                                ☆
+                            {% endif %}
+                        {% endfor %}
+                    </span>
+                </div>
+            </div>
+            <div class="summary-card">
+                <div class="card-title">Pending Payout</div>
+                <div class="card-value">{{ pending_payout }}</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">Earnings Trend</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Earnings</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for i in range(earnings_trend.labels|length) %}
+                <tr>
+                    <td>{{ earnings_trend.labels[i] }}</td>
+                    <td>{{ earnings_trend.data[i] }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="2" style="text-align: center;">No earnings data available</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- <div class="section">
+        <div class="section-title">District Performance</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>District</th>
+                    <th>Total</th>
+                    <th>Earnings</th>
+                    <th>Completed</th>
+                    <th>Status Breakdown</th>
+                    <th>Rating</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for district in district_performance %}
+                <tr>
+                    <td>{{ district.district }}</td>
+                    <td>{{ district.total_bookings }}</td>
+                    <td>{{ district.earnings }}</td>
+                    <td>
+                        {% set completed = district.status_counts.get('Completed', 0) %}
+                        {% set total = district.total_bookings %}
+                        {% set rate = (completed / total * 100)|round %}
+                        {{ rate }}% ({{ completed }}/{{ total }})
+                    </td>
+                    <td>
+                        {% for status, count in district.status_counts.items() %}
+                        <span style="margin-right: 5px;">
+                            {{ status }}: {{ count }}
+                        </span>
+                        {% endfor %}
+                    </td>
+                    <td>
+                        {{ district.rating|default(0)|float|round(1) }}
+                        <span class="stars">
+                            {% for i in range(1, 6) %}
+                                {% if i <= district.rating|default(0)|float %}
+                                    ★
+                                {% elif i == district.rating|default(0)|float|round(0, 'ceil') 
+                                      and district.rating|default(0)|float % 1 >= 0.5 %}
+                                    ½
+                                {% else %}
+                                    ☆
+                                {% endif %}
+                            {% endfor %}
+                        </span>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" style="text-align: center;">
+                        No district data available
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">Recent Transactions</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Booking</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tx in recent_transactions %}
+                <tr>
+                    <td>{{ tx.date }}</td>
+                    <td>{{ tx.booking }}</td>
+                    <td>{{ tx.amount }}</td>
+                    <td>{{ tx.status }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" style="text-align: center;">No recent transactions</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div> -->
+    
+    <div class="footer">
+        Report generated by Travomate on {{ generated_on }}
+    </div>
+</body>
+</html>

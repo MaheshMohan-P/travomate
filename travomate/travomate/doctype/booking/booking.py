@@ -1,6 +1,6 @@
 from frappe.model.document import Document
 import frappe
-from frappe.utils import nowdate, getdate, date_diff, flt
+from frappe.utils import now_datetime, nowdate, getdate, date_diff, flt
 from frappe import _
 
 class Booking(Document):

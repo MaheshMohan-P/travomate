@@ -141,53 +141,69 @@
     <script>
       // Initialize selectedAreas as an empty array
       let selectedAreas = [];
+      let areasFetched = false;
 
-      // Ensure showTravelZoneForm is defined in the global scope
       function showTravelZoneForm() {
-          document.getElementById('travelZoneForm').style.display = 'block';
-          $("#district").val("");
-          $("#area").html('<option value="">Select Area</option>');
-          $("#description").val("");
-          selectedAreas = [];
-          $("#selectedAreas").empty();
-      }
+            document.getElementById('travelZoneForm').style.display = 'block';
+            $("#district").val("");
+            $("#area").html('<option value="">Select Area</option>');
+            $("#description").val("");
+            selectedAreas = [];
+            $("#selectedAreas").empty();
+            areasFetched = false;
+            $("#area").prop('disabled', true); // Disable area dropdown initially
+        }
 
       // Fetch areas based on the selected district
-      function fetchAreasBasedOnDis() {
-          const district = $("#district").val();
-          const areaSelect = $("#area");
+  function fetchAreasBasedOnDis() {
+    const district = $("#district").val();
+    const areaSelect = $("#area");
 
-          // Clear previous options
-          areaSelect.html('<option value="">Select Area</option>');
+    // Clear previous options and disable area dropdown
+    areaSelect.html('<option value="">Loading areas...</option>'); // Loading indicator
+    areaSelect.prop('disabled', true);
 
-          if (district) {
-              $.ajax({
-                  url: "/api/method/frappe.client.get_list",
-                  type: "GET",
-                  headers: {
-                      "X-Frappe-CSRF-Token": $('meta[name="csrf-token"]').attr("content"),
-                  },
-                  data: {
-                      doctype: "Area",
-                      filters: JSON.stringify({ district: district }), // Filter areas by district
-                      fields: JSON.stringify(["name", "area"]), // Fetch area name and ID
-                  },
-                  success: function(response) {
-                      console.log("API Response:", response); // Debugging log
-                      if (response.message) {
-                          // Append areas from the API response
-                          response.message.forEach(function(area) {
-                              areaSelect.append(new Option(area.area, area.name));
-                          });
-                      }
-                  },
-                  error: function(xhr, status, error) {
-                      console.error("Error fetching areas:", error);
-                      alert("Failed to load areas. Please check permissions.");
-                  }
-              });
-          }
-      }
+    if (district) {
+        // Only fetch if not already fetched
+        if (!areasFetched) {
+            $.ajax({
+                url: "/api/method/frappe.client.get_list",
+                type: "GET",
+                headers: {
+                    "X-Frappe-CSRF-Token": $('meta[name="csrf-token"]').attr("content"),
+                },
+                data: {
+                    doctype: "Area",
+                    filters: JSON.stringify({ district: district }),
+                    fields: JSON.stringify(["name", "area"]),
+                },
+                success: function(response) {
+                    // Reset dropdown options
+                    areaSelect.html('<option value="">Select Area</option>');
+                    
+                    if (response.message) {
+                        // Append areas from the API response
+                        response.message.forEach(function(area) {
+                            areaSelect.append(new Option(area.area, area.name));
+                        });
+                        areaSelect.prop('disabled', false); // Enable area dropdown
+                        areasFetched = true;
+                    }
+                },
+                error: function(xhr, status, error) {
+                    areaSelect.html('<option value="">Error loading areas</option>');
+                    console.error("Error fetching areas:", error);
+                    alert("Failed to load areas. Please check permissions.");
+                }
+            });
+        } else {
+            areaSelect.html('<option value="">Select Area</option>');
+            areaSelect.prop('disabled', false); // Enable if already fetched
+        }
+    } else {
+        areaSelect.html('<option value="">Select District first</option>');
+    }
+}
 
       // Save Travel Zone - Updated version
 function SaveTravelZone() {
@@ -276,22 +292,36 @@ function SaveTravelZone() {
 
       // Add selected area to the list
       function addArea() {
-          const selectedArea = $("#area").val();
-          const selectedAreaText = $("#area").find("option:selected").text();
+      const district = $("#district").val();
+      const selectedArea = $("#area").val();
+      const selectedAreaText = $("#area").find("option:selected").text();
 
-          if (selectedArea && !selectedAreas.includes(selectedArea)) {
-              selectedAreas.push(selectedArea); // Add the area to the array
-              const areaList = $("#selectedAreas");
-              areaList.append(`
-                  <li class="list-group-item">
-                      ${selectedAreaText}
-                      <button type="button" class="btn btn-danger btn-sm float-end" onclick="removeArea('${selectedArea}')">Remove</button>
-                  </li>
-              `);
-          } else {
-              alert("Please select a valid area or ensure the area is not already added.");
-          }
+      // Validate district is selected first
+      if (!district) {
+          alert("Please select a district first.");
+          return;
       }
+
+      if (!selectedArea) {
+          alert("Please select a valid area.");
+          return;
+      }
+
+      if (selectedAreas.includes(selectedArea)) {
+          alert("This area is already added.");
+          return;
+      }
+
+      selectedAreas.push(selectedArea);
+      const areaList = $("#selectedAreas");
+      areaList.append(`
+          <li class="list-group-item">
+              ${selectedAreaText}
+              <button type="button" class="btn btn-danger btn-sm float-end" onclick="removeArea('${selectedArea}')">Remove</button>
+          </li>
+      `);
+  }
+
 
       // Remove selected area from the list
       function removeArea(area) {
@@ -344,19 +374,20 @@ function SaveTravelZone() {
       $(document).ready(function() {
           // Call fetchAreasBasedOnDis() when the district dropdown changes
           $("#district").change(function() {
-              fetchAreasBasedOnDis();
-          });
+            areasFetched = false; // Reset flag when district changes
+            fetchAreasBasedOnDis();
+            });
 
           // Call SaveTravelZone() when the form is submitted
           $("#travelZoneForm").on("submit", function(e) {
               e.preventDefault(); // Prevent the default form submission
               SaveTravelZone();
-          });
+            });
 
           // Call addArea() when the "Add Area" button is clicked
           $("#addAreaButton").click(function() {
               addArea();
-          });
+            });
       });
     </script>
   </body>

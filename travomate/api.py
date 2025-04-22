@@ -1,8 +1,11 @@
 import frappe
-from frappe.utils import flt, getdate, nowdate, formatdate
+from frappe.utils import flt, getdate, nowdate
 from frappe.utils.csvutils import build_csv_response
 from datetime import datetime, timedelta
 from collections import defaultdict
+from frappe.utils.pdf import get_pdf
+from frappe.utils import today, formatdate
+import json
 
 @frappe.whitelist()
 def get_guide_for_user(user):
@@ -202,30 +205,69 @@ def get_guide_earnings_trend(guide, period="month", from_date=None, to_date=None
 @frappe.whitelist()
 def get_guide_district_performance(guide, from_date=None, to_date=None):
     try:
-        # Force include districts even with zero values
-        districts = frappe.get_all("District", filters={"state": "Kerala"}, fields=["name as district"])
+        # Get all districts with bookings for this guide
+        districts = frappe.db.sql("""
+            SELECT 
+                b.district as district,
+                d.district_name as district_name,  # Get proper name from District doctype
+                COUNT(b.name) as total_bookings,
+                SUM(CASE WHEN b.status = 'Completed' THEN b.total_amount ELSE 0 END) as earnings,
+                AVG(r.rating) as rating
+            FROM `tabBooking` b
+            LEFT JOIN `tabDistrict` d ON b.district = d.name
+            LEFT JOIN `tabReview` r ON r.booking = b.name
+            WHERE 
+                b.guide = %(guide)s
+                AND b.district IS NOT NULL
+                {% if from_date %} AND b.start_date >= %(from_date)s {% endif %}
+                {% if to_date %} AND b.start_date <= %(to_date)s {% endif %}
+            GROUP BY b.district, d.district_name
+            HAVING COUNT(b.name) > 0
+            ORDER BY total_bookings DESC
+        """, {
+            "guide": guide,
+            "from_date": from_date,
+            "to_date": to_date
+        }, as_dict=True)
         
+        # Get status breakdown
+        status_data = frappe.db.sql("""
+            SELECT 
+                district,
+                status,
+                COUNT(*) as count
+            FROM `tabBooking`
+            WHERE 
+                guide = %(guide)s
+                AND district IS NOT NULL
+                {% if from_date %} AND start_date >= %(from_date)s {% endif %}
+                {% if to_date %} AND start_date <= %(to_date)s {% endif %}
+            GROUP BY district, status
+        """, {
+            "guide": guide,
+            "from_date": from_date,
+            "to_date": to_date
+        }, as_dict=True)
+        
+        # Add status counts to each district
         for district in districts:
-            district.bookings = frappe.db.count("Booking", {
-                "guide": guide,
-                "district": district.district,
-                "status": "Completed"
-            }) or 0
-            
-            district.earnings = frappe.db.get_value("Booking",
-                {"guide": guide, "district": district.district, "status": "Completed"},
-                "sum(total_amount)"
-            ) or 0
-            
-            district.rating = frappe.db.get_value("Review",
-                {"guide": guide, "booking.district": district.district},
-                "avg(rating)"
-            ) or 0
-
-        return {"status": "success", "data": districts}
+            district.status_counts = {}
+            for status in status_data:
+                if status.district == district.district:
+                    district.status_counts[status.status] = status.count
+        
+        return {
+            "status": "success",
+            "data": districts or []
+        }
         
     except Exception as e:
-        return {"status": "error", "message": str(e), "data": []}
+        frappe.log_error(frappe.get_traceback(), "District Performance Error")
+        return {
+            "status": "error",
+            "message": str(e),
+            "data": []
+        }
     
 @frappe.whitelist()
 def get_guide_recent_transactions(guide, from_date=None, to_date=None, limit=5):
@@ -333,3 +375,88 @@ def export_guide_transactions(guide):
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Error in export_guide_transactions")
         frappe.throw(f"Failed to export transactions data: {str(e)}")
+
+@frappe.whitelist()
+def generate_guide_report_pdf(guide, period, from_date=None, to_date=None):
+    """Generate PDF report for guide's performance"""
+    try:
+        if not guide:
+            frappe.throw("Guide is required")
+
+        # Get all the required data
+        booking_stats = get_guide_booking_stats(guide, from_date, to_date)
+        if booking_stats.get("status") != "success":
+            frappe.throw("Failed to fetch booking stats")
+            
+        earnings_trend = get_guide_earnings_trend(guide, period, from_date, to_date)
+        district_performance = get_guide_district_performance(guide, from_date, to_date)
+        recent_transactions = get_guide_recent_transactions(guide, from_date, to_date, limit=10)
+        
+        # Get guide details
+        guide_doc = frappe.get_doc("Guide", guide)
+        
+        # Format numbers before passing to template
+        def format_currency(value):
+            return "₹{:,.2f}".format(float(value or 0))
+            
+        def format_float(value, decimals=1):
+            return "{:,.{}f}".format(float(value or 0), decimals)
+        
+        # Format earnings trend data
+        formatted_earnings_trend = {
+            "labels": earnings_trend.get("labels", []),
+            "data": [format_currency(amount) for amount in earnings_trend.get("data", [])]
+        }
+        
+        # Format district performance data
+        formatted_districts = []
+        for district in district_performance.get("data", []):
+            formatted_districts.append({
+                "district": district.get("district", ""),
+                "bookings": district.get("bookings", 0),
+                "earnings": format_currency(district.get("earnings", 0)),
+                "rating": format_float(district.get("rating", 0))
+            })
+        
+        # Format transactions
+        formatted_transactions = []
+        for tx in recent_transactions.get("transactions", []):
+            formatted_transactions.append({
+                "date": tx.get("date", ""),
+                "booking": tx.get("booking", ""),
+                "amount": format_currency(tx.get("amount", 0)),
+                "status": tx.get("status", "")
+            })
+        
+        # Prepare report data
+        report_data = {
+            "guide_name": guide_doc.full_name,
+            "report_period": period.capitalize(),
+            "from_date": formatdate(from_date) if from_date else "",
+            "to_date": formatdate(to_date) if to_date else "",
+            "generated_on": formatdate(today()),
+            "total_earnings": format_currency(booking_stats.get("total_earnings", 0)),
+            "completed_bookings": booking_stats.get("completed_bookings", 0),
+            "average_rating": format_float(guide_doc.rating),
+            "pending_payout": format_currency(booking_stats.get("pending_payout", 0)),
+            "earnings_trend": formatted_earnings_trend,
+            "district_performance": formatted_districts,
+            "recent_transactions": formatted_transactions,
+            "logo": "/assets/img/icon2.png"
+        }
+        
+        # Render HTML template
+        html = frappe.render_template("templates/guide_report.html", report_data)
+        
+        # Generate PDF
+        pdf = get_pdf(html)
+        
+        # Set response headers for PDF download
+        frappe.local.response.filename = f"{guide}_report_{period}.pdf"
+        frappe.local.response.filecontent = pdf
+        frappe.local.response.type = "pdf"
+        
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Error in generate_guide_report_pdf")
+        frappe.throw(f"Failed to generate PDF report: {str(e)}")
+

@@ -314,7 +314,7 @@
             <div class="card shadow-sm h-100">
               <div class="card-header py-3 d-flex justify-content-between align-items-center">
                 <h6 class="m-0 font-weight-bold text-primary">District Performance</h6>
-                <a href="/travel_zones" class="btn btn-sm btn-primary">Manage Zones</a>
+                <a href="/travel_zone" class="btn btn-sm btn-primary">Manage Zones</a>
               </div>
               <div class="card-body zone-performance">
                 <div class="table-responsive">
@@ -322,10 +322,12 @@
                     <thead>
                       <tr>
                         <th>District</th>
-                        <th>Bookings</th>
-                        <th>Earnings</th>
+                        <th>Total Requests</th>
+                        <th>Earnings (Completed)</th>
+                        <th>Completion Rate</th>
+                        <th>Status Breakdown</th>
                         <th>Rating</th>
-                      </tr>
+                    </tr>
                     </thead>
                     <tbody>
                       <!-- Data will be loaded via JavaScript -->
@@ -368,7 +370,13 @@
         </div>
       </div>
     </section>
-
+    <section>
+      <center>
+        <button class="btn btn-sm btn-danger" onclick="exportAsPDF()">
+          <i class="fas fa-file-pdf"></i> Export as PDF
+        </button>
+      </center>
+    </section>
     <!-- Footer -->
     <footer class="py-5 text-center">
       <p class="mb-0 text-secondary fs--1 fw-medium">All rights reserved@travomate.co</p>
@@ -875,47 +883,74 @@ document.addEventListener('DOMContentLoaded', function() {
     const tableBody = document.querySelector('#districtPerformanceTable tbody');
     tableBody.innerHTML = '';
     
-    // Special case: When guide exists but no district data
-    if (guideData.name && (!districts || districts.length === 0)) {
+    if (!districts || districts.length === 0) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="6" class="text-center py-4">
+                    <i class="fas fa-info-circle text-info"></i>
+                    <p>No bookings found in any district</p>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    districts.forEach(district => {
         const row = document.createElement('tr');
+        
+        // Calculate completion rate
+        const completed = district.status_counts?.Completed || 0;
+        const total = district.total_bookings || 1;
+        const completionRate = Math.round((completed / total) * 100);
+        
+        // Status badges
+        const statusBadges = Object.entries(district.status_counts || {})
+            .map(([status, count]) => 
+                `<span class="badge bg-${getStatusColor(status)} me-1">${status}: ${count}</span>`
+            ).join('');
+        
         row.innerHTML = `
-            <td colspan="4" class="text-center py-4">
-                <i class="fas fa-exclamation-circle text-warning"></i>
-                <p>Bookings exist but district data is missing</p>
-                <small class="text-muted">
-                    Ensure your bookings have districts assigned
-                </small>
-                <div class="mt-2">
-                    <a href="/booking_requests" class="btn btn-sm btn-warning">
-                        Check Bookings
-                    </a>
+            <td>${district.district || 'N/A'}</td>
+            <td>${district.total_bookings || 0}</td>
+            <td>₹${(district.earnings || 0).toLocaleString('en-IN')}</td>
+            <td>
+                <div class="progress progress-thin">
+                    <div class="progress-bar bg-success" 
+                         role="progressbar" 
+                         style="width: ${completionRate}%" 
+                         aria-valuenow="${completionRate}" 
+                         aria-valuemin="0" 
+                         aria-valuemax="100">
+                    </div>
+                </div>
+                <small>${completionRate}% completed</small>
+            </td>
+            <td>
+                ${statusBadges}
+            </td>
+            <td>
+                <div class="d-flex align-items-center">
+                    <div class="rating-stars me-2">
+                        ${renderStarsHtml(district.rating || 0)}
+                    </div>
+                    <span>${(district.rating || 0).toFixed(1)}</span>
                 </div>
             </td>
         `;
-        tableBody.appendChild(row);
-        return;
-    }
         
-        districts.forEach(district => {
-            const row = document.createElement('tr');
-            
-            row.innerHTML = `
-                <td>${district.district || 'N/A'}</td>
-                <td>${district.bookings || 0}</td>
-                <td>₹${(district.earnings || 0).toLocaleString()}</td>
-                <td>
-                    <div class="d-flex align-items-center">
-                        <div class="rating-stars me-2">
-                            ${renderStarsHtml(district.rating || 0)}
-                        </div>
-                        <span>${district.rating || 0}</span>
-                    </div>
-                </td>
-            `;
-            
-            tableBody.appendChild(row);
-        });
+        tableBody.appendChild(row);
+    });
+}
+
+function getStatusColor(status) {
+    switch(status.toLowerCase()) {
+        case 'completed': return 'success';
+        case 'confirmed': return 'primary';
+        case 'pending': return 'warning';
+        case 'cancelled': return 'danger';
+        default: return 'secondary';
     }
+}
 
     // Update transactions table
     function updateTransactionsTable(transactions) {
@@ -1094,6 +1129,63 @@ document.addEventListener('DOMContentLoaded', function() {
         $('body').append(toast);
         setTimeout(() => toast.remove(), 3000);
     }
+
+    // Export as PDF
+function exportAsPDF() {
+    if (!guideData.name) {
+        showErrorToast("Guide data not loaded");
+        return;
+    }
+
+    showLoading();
+    
+    // Get date range based on current period
+    let fromDate, toDate;
+    const today = new Date();
+    toDate = formatDate(today);
+    
+    switch(currentPeriod) {
+        case 'week':
+            fromDate = formatDate(new Date(today.setDate(today.getDate() - 7)));
+            break;
+        case 'month':
+            fromDate = formatDate(new Date(today.setMonth(today.getMonth() - 1)));
+            break;
+        case 'quarter':
+            fromDate = formatDate(new Date(today.setMonth(today.getMonth() - 3)));
+            break;
+        case 'year':
+            fromDate = formatDate(new Date(today.setFullYear(today.getFullYear() - 1)));
+            break;
+        case 'custom':
+            fromDate = document.getElementById('startDate').value;
+            toDate = document.getElementById('endDate').value;
+            break;
+        default:
+            fromDate = formatDate(new Date(today.setMonth(today.getMonth() - 1)));
+    }
+
+    // Call the API to generate PDF
+    window.location.href = `/api/method/travomate.api.generate_guide_report_pdf?` + 
+        `guide=${guideData.name}&period=${currentPeriod}` +
+        `${fromDate ? '&from_date=' + fromDate : ''}` +
+        `${toDate ? '&to_date=' + toDate : ''}`;
+        
+    hideLoading();
+}
+
+// Helper function to format date as YYYY-MM-DD
+function formatDate(date) {
+    const d = new Date(date);
+    let month = '' + (d.getMonth() + 1);
+    let day = '' + d.getDate();
+    const year = d.getFullYear();
+
+    if (month.length < 2) month = '0' + month;
+    if (day.length < 2) day = '0' + day;
+
+    return [year, month, day].join('-');
+}
 
     // Logout function
 function logout() {
